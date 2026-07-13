@@ -5,7 +5,7 @@ export type QuestionType =
   | "rating"
   | "email";
 
-/** Raw in-progress answers, keyed by question id. Shape loosened for flexible editing; narrowed into QuestionnaireResponse on submit. */
+/** Raw in-progress answers, keyed by question id. Shape loosened for flexible editing; narrowed into WellBuiltValidationResponseV3 on submit. */
 export type Answers = {
   [key: string]: string | string[] | number | undefined;
 };
@@ -16,75 +16,109 @@ export type Question = {
   /** Question copy. Can depend on prior answers (e.g. renter-friendly wording). */
   label: (answers: Answers) => string;
   helperText?: (answers: Answers) => string | undefined;
-  /** Static option list, or a function that reorders/filters options based on prior answers. */
+  placeholder?: string;
+  /** Static option list, or a function that derives options from prior answers (e.g. dynamic Q9/Q18). */
   options?: string[] | ((answers: Answers) => string[]);
   maxSelect?: number;
+  /**
+   * Options that are mutually exclusive with all other options in a multi-select.
+   * Selecting one clears the rest; selecting any other option clears these.
+   * Used for Q8 "None of these".
+   */
+  exclusiveOptions?: string[];
   required?: boolean;
-  placeholder?: string;
   ratingLabels?: { min: string; max: string };
   /** Only render this question when the predicate is true. */
   showIf?: (answers: Answers) => boolean;
 };
 
+export type ConceptCard = {
+  eyebrow?: string;
+  body: string[];
+};
+
 export type Section = {
   id: string;
+  /** Progress stage (1-6). Value and Final share the WellBuilt stage. */
   step: number;
+  /** Short label shown in the progress bar (Home, People, Space, ...). */
+  progressLabel: string;
+  /** Descriptive section heading shown above the questions. */
   title: string;
   helperText: string;
+  /** Optional concept card rendered above the questions (Section 6 — WellBuilt). */
+  conceptCard?: ConceptCard;
   questions: Question[];
 };
 
-export type QuestionnaireResponse = {
+/**
+ * Versioned research response (V3).
+ *
+ * This is a research/validation payload only. It intentionally stores NO
+ * Healthy Home Score, category scores, health-risk labels, or derived
+ * diagnostic fields. Open-text answers are preserved exactly as entered.
+ */
+export type WellBuiltValidationResponseV3 = {
+  questionnaireVersion: "wellbuilt-validation-v3";
   responseId: string;
-  createdAt: string;
+  startedAt: string;
+  completedAt?: string;
+  completionStatus: "started" | "completed";
 
-  // Section 1 — About you and your home
-  userType: string[];
-  homeType: string;
-  homeAge: string;
-  householdMembers: string[];
+  home: {
+    currentSituation?: string;
+    homeType?: string;
+    homeAge?: string;
+    expectedStay?: string;
+  };
 
-  // Section 2 — Biggest home challenges
-  topFrustrations: string[];
-  oneInstantImprovement: string;
-  projectDelay: string;
-  blockers: string[];
-  urgencyScore: number | null;
-  rentalPropertyCondition?: string;
-  tenantHealthConcerns?: string[];
+  people: {
+    householdMembers?: string[];
+    currentPriorities?: string[];
+    needsInfluenceDecisions?: string;
+    decisionInfluencingNeeds?: string[];
+  };
 
-  // Section 3 — Healthy home awareness
-  healthyHomeAwareness: string;
-  healthyHomePriorities: string[];
-  healthyPurchaseHistory: string[];
-  materialConfidence: number | null;
-  confusingAdvice: string;
+  space: {
+    regularlyNoticedIssues?: string[];
+    biggestDailyIssue?: string;
+    improvementAttempt?: string;
+    attemptedOrResearched?: string;
+  };
 
-  // Section 4 — Renovation and decision-making
-  upcomingProjects: string[];
-  budgetRange: string;
-  designConfidence: number | null;
-  confidenceHelpers: string[];
-  fearedMistake: string;
+  decisions: {
+    delayedDecision?: string;
+    delayedDecisionDescription?: string;
+    decisionDifficulties?: string[];
+    adviceSources?: string[];
+    adviceVsMarketingConfidence?: number;
+  };
 
-  // Section 5 — AI and digital tools
-  aiUsage: string;
-  aiUseCases: string[];
-  aiConcerns: string[];
-  aiTrustScore: number | null;
-  trustBuilders: string[];
+  plans: {
+    projectsNext12Months?: string;
+    upcomingProjects?: string[];
+    hardestUpcomingDecision?: string;
+    comparisonPriorities?: string[];
+    wishSomeoneWouldTellMe?: string;
+  };
 
-  // Section 6 — Product and pricing validation
-  productInterest: string[];
-  firstProductChoice: string;
-  priceRange: string;
-  preferredFormat: string;
-  paymentTrigger: string;
-  purchaseObjection: string;
+  concept: {
+    usefulnessRating?: number;
+    mostValuableParts?: string[];
+    mostLikelyProduct?: string;
+    preferredRecommendationFormat?: string;
+  };
 
-  // Section 7 — Early access and interviews
-  earlyAccess: string;
-  email?: string;
-  interviewInterest: string;
-  finalNotes: string;
+  value: {
+    reasonableOneTimePrice?: string;
+    willingnessToPayReason?: string;
+    distrustReason?: string;
+  };
+
+  research: {
+    architectQuestion?: string;
+    earlyAccessInterest?: string;
+    email?: string;
+    interviewInterest?: string;
+  };
 };

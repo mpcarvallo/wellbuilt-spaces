@@ -22,17 +22,28 @@ export default function ThankYouScreen({ showEmailCta, onEmailSubmit }: ThankYou
         Thank you
       </span>
       <h1 className="font-serif text-3xl sm:text-4xl leading-tight text-foreground max-w-lg">
-        Thank you for helping shape WellBuilt Spaces.
+        Thank you. You just helped shape WellBuilt Spaces.
       </h1>
       <p className="text-base sm:text-lg text-muted max-w-md leading-relaxed">
-        Your answers will help us build practical tools for healthier,
-        better-designed homes — without the overwhelm.
+        We&rsquo;re exploring a better way to help people make confident home
+        decisions—considering the home, the people living in it, and how design
+        choices affect everyday life.
       </p>
-      <p className="text-sm text-muted max-w-sm">
-        Next, we are building a personalized Healthy Home Score that gives
-        people a simple snapshot of their home&rsquo;s strengths, risks, and
-        next best actions.
+      <p className="text-base sm:text-lg text-muted max-w-md leading-relaxed">
+        Your responses will directly influence what we build first. If you
+        requested early access, we&rsquo;ll let you know when the WellBuilt Home
+        Snapshot is ready.
       </p>
+
+      <div className="mt-2 flex w-full max-w-sm flex-col gap-2 rounded-2xl border border-border bg-card p-5 text-center">
+        <span className="text-sm font-medium tracking-wide text-moss uppercase">
+          Coming next
+        </span>
+        <p className="font-serif text-lg text-foreground">The WellBuilt Home Snapshot</p>
+        <p className="text-sm text-muted">
+          A personalized view of the home decisions most worth your attention.
+        </p>
+      </div>
 
       {showEmailCta && !submitted && (
         <form
@@ -40,11 +51,11 @@ export default function ThankYouScreen({ showEmailCta, onEmailSubmit }: ThankYou
           className="mt-2 flex w-full max-w-sm flex-col gap-3 rounded-2xl border border-border bg-card p-5 text-left"
         >
           <label htmlFor="thank-you-email" className="font-serif text-lg text-foreground">
-            Want to be part of the first test group?
+            Want early access when it&rsquo;s ready?
           </label>
           <p className="text-sm text-muted">
-            Leave your email and we will invite you when the Healthy Home
-            Score is ready.
+            Leave your email and we&rsquo;ll let you know when the WellBuilt Home
+            Snapshot is available.
           </p>
           <input
             id="thank-you-email"

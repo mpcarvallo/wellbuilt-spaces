@@ -18,8 +18,11 @@ export default function QuestionCard({ question, answers, onAnswer, showError }:
   const options =
     typeof question.options === "function" ? question.options(answers) : question.options;
 
+  const exclusive = question.exclusiveOptions ?? [];
+
   const toggleMulti = (option: string) => {
     const current = Array.isArray(value) ? value : [];
+    // Deselecting is always allowed.
     if (current.includes(option)) {
       onAnswer(
         question.id,
@@ -27,8 +30,15 @@ export default function QuestionCard({ question, answers, onAnswer, showError }:
       );
       return;
     }
-    if (question.maxSelect && current.length >= question.maxSelect) return;
-    onAnswer(question.id, [...current, option]);
+    // Selecting an exclusive option (e.g. "None of these") clears all others.
+    if (exclusive.includes(option)) {
+      onAnswer(question.id, [option]);
+      return;
+    }
+    // Selecting a normal option clears any exclusive options first.
+    const base = current.filter((o) => !exclusive.includes(o));
+    if (question.maxSelect && base.length >= question.maxSelect) return;
+    onAnswer(question.id, [...base, option]);
   };
 
   return (
@@ -62,8 +72,14 @@ export default function QuestionCard({ question, answers, onAnswer, showError }:
           {options.map((option) => {
             const current = Array.isArray(value) ? value : [];
             const selected = current.includes(option);
+            // Exclusive options (e.g. "None of these") are never disabled by the
+            // selection limit — they replace the current selection when clicked.
+            const nonExclusiveCount = current.filter((o) => !exclusive.includes(o)).length;
             const disabled =
-              !selected && !!question.maxSelect && current.length >= question.maxSelect;
+              !selected &&
+              !exclusive.includes(option) &&
+              !!question.maxSelect &&
+              nonExclusiveCount >= question.maxSelect;
             return (
               <CheckboxChip
                 key={option}

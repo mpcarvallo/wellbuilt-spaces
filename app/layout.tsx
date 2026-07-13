@@ -16,9 +16,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "WellBuilt Spaces — How healthy does your home feel?",
+  title: "WellBuilt Spaces — Which home decisions are worth your attention?",
   description:
-    "A short questionnaire helping WellBuilt Spaces understand what people need most when creating healthier, more functional homes.",
+    "A short questionnaire helping shape WellBuilt Spaces — a wellness-informed way to make more confident home and renovation decisions.",
 };
 
 export default function RootLayout({

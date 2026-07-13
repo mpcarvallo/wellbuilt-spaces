@@ -1,60 +1,92 @@
-import { Answers, QuestionnaireResponse } from "./questionnaire-types";
+import { Answers, WellBuiltValidationResponseV3 } from "./questionnaire-types";
 
-const str = (v: unknown): string => (typeof v === "string" ? v : "");
-const arr = (v: unknown): string[] => (Array.isArray(v) ? v : []);
-const num = (v: unknown): number | null => (typeof v === "number" ? v : null);
+const str = (v: unknown): string | undefined =>
+  typeof v === "string" && v.length > 0 ? v : undefined;
+const arr = (v: unknown): string[] | undefined =>
+  Array.isArray(v) && v.length > 0 ? (v as string[]) : undefined;
+const num = (v: unknown): number | undefined => (typeof v === "number" ? v : undefined);
 
-export function buildResponse(answers: Answers): QuestionnaireResponse {
+export type ResponseMeta = {
+  responseId: string;
+  startedAt: string;
+  completedAt?: string;
+  completionStatus: "started" | "completed";
+};
+
+/**
+ * Maps in-progress answers into the versioned V3 research payload.
+ *
+ * This is research data only: no Healthy Home Score, category scores, health
+ * labels, or derived diagnostic fields are computed or stored. Open-text
+ * answers (attemptedOrResearched, wishSomeoneWouldTellMe, willingnessToPayReason,
+ * distrustReason, architectQuestion, ...) are stored verbatim, never summarized.
+ */
+export function buildResponse(
+  answers: Answers,
+  meta: ResponseMeta
+): WellBuiltValidationResponseV3 {
   return {
-    responseId:
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `resp_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-    createdAt: new Date().toISOString(),
+    questionnaireVersion: "wellbuilt-validation-v3",
+    responseId: meta.responseId,
+    startedAt: meta.startedAt,
+    completedAt: meta.completedAt,
+    completionStatus: meta.completionStatus,
 
-    userType: arr(answers.userType),
-    homeType: str(answers.homeType),
-    homeAge: str(answers.homeAge),
-    householdMembers: arr(answers.householdMembers),
+    home: {
+      currentSituation: str(answers.currentSituation),
+      homeType: str(answers.homeType),
+      homeAge: str(answers.homeAge),
+      expectedStay: str(answers.expectedStay),
+    },
 
-    topFrustrations: arr(answers.topFrustrations),
-    oneInstantImprovement: str(answers.oneInstantImprovement),
-    projectDelay: str(answers.projectDelay),
-    blockers: arr(answers.blockers),
-    urgencyScore: num(answers.urgencyScore),
-    rentalPropertyCondition: str(answers.rentalPropertyCondition) || undefined,
-    tenantHealthConcerns: arr(answers.tenantHealthConcerns).length
-      ? arr(answers.tenantHealthConcerns)
-      : undefined,
+    people: {
+      householdMembers: arr(answers.householdMembers),
+      currentPriorities: arr(answers.currentPriorities),
+      needsInfluenceDecisions: str(answers.needsInfluenceDecisions),
+      decisionInfluencingNeeds: arr(answers.decisionInfluencingNeeds),
+    },
 
-    healthyHomeAwareness: str(answers.healthyHomeAwareness),
-    healthyHomePriorities: arr(answers.healthyHomePriorities),
-    healthyPurchaseHistory: arr(answers.healthyPurchaseHistory),
-    materialConfidence: num(answers.materialConfidence),
-    confusingAdvice: str(answers.confusingAdvice),
+    space: {
+      regularlyNoticedIssues: arr(answers.regularlyNoticedIssues),
+      biggestDailyIssue: str(answers.biggestDailyIssue),
+      improvementAttempt: str(answers.improvementAttempt),
+      attemptedOrResearched: str(answers.attemptedOrResearched),
+    },
 
-    upcomingProjects: arr(answers.upcomingProjects),
-    budgetRange: str(answers.budgetRange),
-    designConfidence: num(answers.designConfidence),
-    confidenceHelpers: arr(answers.confidenceHelpers),
-    fearedMistake: str(answers.fearedMistake),
+    decisions: {
+      delayedDecision: str(answers.delayedDecision),
+      delayedDecisionDescription: str(answers.delayedDecisionDescription),
+      decisionDifficulties: arr(answers.decisionDifficulties),
+      adviceSources: arr(answers.adviceSources),
+      adviceVsMarketingConfidence: num(answers.adviceVsMarketingConfidence),
+    },
 
-    aiUsage: str(answers.aiUsage),
-    aiUseCases: arr(answers.aiUseCases),
-    aiConcerns: arr(answers.aiConcerns),
-    aiTrustScore: num(answers.aiTrustScore),
-    trustBuilders: arr(answers.trustBuilders),
+    plans: {
+      projectsNext12Months: str(answers.projectsNext12Months),
+      upcomingProjects: arr(answers.upcomingProjects),
+      hardestUpcomingDecision: str(answers.hardestUpcomingDecision),
+      comparisonPriorities: arr(answers.comparisonPriorities),
+      wishSomeoneWouldTellMe: str(answers.wishSomeoneWouldTellMe),
+    },
 
-    productInterest: arr(answers.productInterest),
-    firstProductChoice: str(answers.firstProductChoice),
-    priceRange: str(answers.priceRange),
-    preferredFormat: str(answers.preferredFormat),
-    paymentTrigger: str(answers.paymentTrigger),
-    purchaseObjection: str(answers.purchaseObjection),
+    concept: {
+      usefulnessRating: num(answers.usefulnessRating),
+      mostValuableParts: arr(answers.mostValuableParts),
+      mostLikelyProduct: str(answers.mostLikelyProduct),
+      preferredRecommendationFormat: str(answers.preferredRecommendationFormat),
+    },
 
-    earlyAccess: str(answers.earlyAccess),
-    email: str(answers.email) || undefined,
-    interviewInterest: str(answers.interviewInterest),
-    finalNotes: str(answers.finalNotes),
+    value: {
+      reasonableOneTimePrice: str(answers.reasonableOneTimePrice),
+      willingnessToPayReason: str(answers.willingnessToPayReason),
+      distrustReason: str(answers.distrustReason),
+    },
+
+    research: {
+      architectQuestion: str(answers.architectQuestion),
+      earlyAccessInterest: str(answers.earlyAccessInterest),
+      email: str(answers.email),
+      interviewInterest: str(answers.interviewInterest),
+    },
   };
 }

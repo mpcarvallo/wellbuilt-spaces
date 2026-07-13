@@ -1,37 +1,30 @@
 import { Answers, Question, Section } from "./questionnaire-types";
 
-const isRenter = (answers: Answers) =>
-  Array.isArray(answers.userType) && answers.userType.includes("Renter");
-
-const isInvestor = (answers: Answers) =>
-  Array.isArray(answers.userType) &&
-  answers.userType.includes("Real estate investor");
-
-const isParent = (answers: Answers) =>
-  Array.isArray(answers.userType) &&
-  answers.userType.includes("Parent or caregiver");
-
-/** Moves the given options to the front of the list, preserving relative order otherwise. */
-function prioritize(options: string[], priorityOptions: string[]) {
-  const priority = options.filter((o) => priorityOptions.includes(o));
-  const rest = options.filter((o) => !priorityOptions.includes(o));
-  return [...priority, ...rest];
+/** Options carried over from a prior multi-select answer, used for dynamic single-selects (Q9, Q18). */
+function fromPriorSelection(
+  answers: Answers,
+  sourceId: string,
+  exclude: string[] = []
+): string[] {
+  const raw = answers[sourceId];
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((o) => !exclude.includes(o));
 }
 
-const section1: Question[] = [
+// ---------------------------------------------------------------------------
+// SECTION 1 — HOME
+// ---------------------------------------------------------------------------
+const home: Question[] = [
   {
-    id: "userType",
-    type: "multi-select",
-    label: () => "Which best describes you?",
+    id: "currentSituation",
+    type: "single-select",
+    label: () => "Which best describes your current situation?",
     required: true,
     options: [
-      "Homeowner",
-      "Renter",
-      "Planning to buy a home",
-      "Parent or caregiver",
-      "Real estate investor",
-      "Small business owner with a physical space",
-      "Design/renovation enthusiast",
+      "I own my home",
+      "I rent my home",
+      "I am planning to buy",
+      "I own an investment property",
       "Other",
     ],
   },
@@ -45,520 +38,522 @@ const section1: Question[] = [
       "Condo",
       "Townhouse",
       "Single-family home",
-      "Duplex / multi-family",
+      "Two- to four-unit building",
       "Other",
+      "Not sure",
     ],
   },
   {
     id: "homeAge",
     type: "single-select",
-    label: () => "How old is your home?",
-    options: ["Newer than 5 years", "5-20 years", "20-50 years", "50+ years", "Not sure"],
+    label: () => "Approximately how old is your home?",
+    options: [
+      "Less than 5 years",
+      "5–20 years",
+      "21–50 years",
+      "51–100 years",
+      "More than 100 years",
+      "Not sure",
+    ],
   },
+  {
+    id: "expectedStay",
+    type: "single-select",
+    label: () => "How long do you expect to stay in your current home?",
+    options: ["Less than 1 year", "1–3 years", "4–7 years", "8+ years", "Not sure"],
+  },
+];
+
+// ---------------------------------------------------------------------------
+// SECTION 2 — PEOPLE
+// ---------------------------------------------------------------------------
+const people: Question[] = [
   {
     id: "householdMembers",
     type: "multi-select",
-    label: () => "Who lives in the home?",
-    options: (answers) =>
-      prioritize(
-        [
-          "Adults only",
-          "Baby / toddler",
-          "School-age child",
-          "Teenager",
-          "Older adult",
-          "Person with allergies/asthma/sensitivities",
-          "Pet",
-          "Other",
-        ],
-        isParent(answers)
-          ? ["Baby / toddler", "School-age child", "Teenager"]
-          : []
-      ),
+    label: () => "Who lives in your home?",
+    options: [
+      "Just me",
+      "Partner or spouse",
+      "Baby or toddler",
+      "School-age child",
+      "Teenager",
+      "Adult family members",
+      "Older adult",
+      "Pet",
+    ],
   },
-];
-
-const section2: Question[] = [
   {
-    id: "topFrustrations",
+    id: "currentPriorities",
     type: "multi-select",
-    label: () => "Which areas frustrate you most in your home right now?",
-    helperText: () => "Choose up to 5.",
-    required: true,
+    label: () => "Which everyday priorities matter most in your home right now?",
+    helperText: () => "Select up to 5.",
     maxSelect: 5,
-    options: (answers) =>
-      prioritize(
-        [
-          "Indoor air quality",
-          "Dust or allergens",
-          "Mold, moisture, or humidity",
-          "Materials or chemical concerns",
-          "Storage",
-          "Clutter",
-          "Lighting",
-          "Noise",
-          "Sleep environment",
-          "Layout / flow",
-          "Kitchen functionality",
-          "Bathroom functionality",
-          "Child-friendly spaces",
-          "Home office setup",
-          "Maintenance",
-          "Energy bills",
-          "Making design decisions",
-        ],
-        isParent(answers) ? ["Child-friendly spaces", "Indoor air quality"] : []
-      ),
-  },
-  {
-    id: "oneInstantImprovement",
-    type: "open-text",
-    label: () => "If you could instantly improve one thing in your home, what would it be?",
-    placeholder: "Example: better storage, less dust, safer materials, calmer kids' room...",
-    required: true,
-  },
-  {
-    id: "projectDelay",
-    type: "single-select",
-    label: () => "Have you delayed a home project because you did not know where to start?",
-    options: ["Yes, many times", "Yes, once or twice", "No", "Not sure"],
-  },
-  {
-    id: "blockers",
-    type: "multi-select",
-    label: () => "What usually stops you from making home improvements?",
-    options: (answers) =>
-      prioritize(
-        [
-          "Too expensive",
-          "Too many options",
-          "Not enough time",
-          "I do not know what products/materials to choose",
-          "I do not know who to trust",
-          "I am afraid of making costly mistakes",
-          "My home feels overwhelming",
-          "My partner/family and I disagree",
-          "I need renter-friendly solutions",
-          "Other",
-        ],
-        isRenter(answers) ? ["I need renter-friendly solutions"] : []
-      ),
-  },
-  {
-    id: "urgencyScore",
-    type: "rating",
-    label: () => "How painful or urgent does this feel right now?",
-    required: true,
-    ratingLabels: { min: "Not urgent", max: "I really want help soon" },
-  },
-  {
-    id: "rentalPropertyCondition",
-    type: "single-select",
-    label: () => "What condition is your rental property generally in?",
-    helperText: () => "Since you mentioned investing in rental property.",
-    showIf: isInvestor,
     options: [
-      "Excellent — recently updated",
-      "Good — minor issues",
-      "Fair — some deferred maintenance",
-      "Poor — needs significant work",
-      "Varies by property",
-    ],
-  },
-  {
-    id: "tenantHealthConcerns",
-    type: "multi-select",
-    label: () => "Have tenants raised any health or safety concerns?",
-    showIf: isInvestor,
-    options: [
-      "Mold or moisture complaints",
-      "Air quality or ventilation complaints",
-      "Pest issues",
-      "Safety hazards (railings, trip hazards, electrical)",
-      "Noise complaints",
-      "No concerns raised",
-      "Not sure",
-    ],
-  },
-];
-
-const section3: Question[] = [
-  {
-    id: "healthyHomeAwareness",
-    type: "single-select",
-    label: () => 'Before today, had you heard the term "healthy home"?',
-    options: [
-      "Yes, and I know what it means",
-      "Yes, but I am not totally sure what it includes",
-      "No",
-    ],
-  },
-  {
-    id: "healthyHomePriorities",
-    type: "multi-select",
-    label: () => "Which healthy home topics matter most to you?",
-    helperText: () => "Choose up to 5.",
-    required: true,
-    maxSelect: 5,
-    options: (answers) =>
-      prioritize(
-        [
-          "Better indoor air",
-          "Low-VOC / safer materials",
-          "Mold prevention",
-          "Dust and allergens",
-          "Water quality",
-          "Non-toxic cleaning",
-          "Sleep and circadian lighting",
-          "Noise control",
-          "Thermal comfort",
-          "Child development / sensory-friendly spaces",
-          "Aging-in-place safety",
-          "Sustainability",
-          "Energy efficiency",
-        ],
-        isParent(answers) ? ["Child development / sensory-friendly spaces"] : []
-      ),
-  },
-  {
-    id: "healthyPurchaseHistory",
-    type: "multi-select",
-    label: () => "Have you ever bought a product because it was advertised as healthier or safer?",
-    options: [
-      "Paint",
-      "Flooring",
-      "Furniture",
-      "Mattress",
-      "Cleaning products",
-      "Air purifier",
-      "Water filter",
-      "Cookware",
-      "Baby/child products",
-      "No",
+      "Better sleep",
+      "Cleaner-feeling indoor air",
+      "Fewer odors, dust, or allergens",
+      "More natural light",
+      "Better lighting",
+      "Less noise",
+      "More comfortable temperatures",
+      "Easier cleaning and maintenance",
+      "Less clutter",
+      "Better organization",
+      "Spaces that better support children",
+      "Better focus or work-from-home spaces",
+      "More calming or less overstimulating spaces",
+      "More confidence in material choices",
+      "Lower energy use",
+      "Preparing the home for aging",
       "Other",
     ],
   },
   {
-    id: "materialConfidence",
-    type: "rating",
-    label: () => "How confident are you that you can identify healthier materials/products?",
-    ratingLabels: { min: "Not confident", max: "Very confident" },
+    id: "needsInfluenceDecisions",
+    type: "single-select",
+    label: () =>
+      "Do the needs or preferences of anyone in your household significantly influence home or material decisions?",
+    options: ["Yes", "No", "Prefer not to say"],
   },
   {
-    id: "confusingAdvice",
-    type: "open-text",
-    label: () => "What feels confusing about healthy home advice?",
+    id: "decisionInfluencingNeeds",
+    type: "multi-select",
+    label: () => "What types of needs or preferences influence your decisions?",
+    showIf: (answers) => answers.needsInfluenceDecisions === "Yes",
+    options: [
+      "Sensitivity to odors",
+      "Sensitivity to noise",
+      "Sensitivity to light or glare",
+      "Allergy-related concerns",
+      "Mobility or accessibility needs",
+      "Sensory preferences",
+      "Sleep-related priorities",
+      "Focus or attention needs",
+      "Young children in the home",
+      "Older adults in the home",
+      "Other",
+      "Prefer not to say",
+    ],
   },
 ];
 
-const section4: Question[] = [
+// ---------------------------------------------------------------------------
+// SECTION 3 — SPACE
+// ---------------------------------------------------------------------------
+const NONE_OF_THESE = "None of these";
+
+const space: Question[] = [
+  {
+    id: "regularlyNoticedIssues",
+    type: "multi-select",
+    label: () => "Which of these do you notice regularly?",
+    exclusiveOptions: [NONE_OF_THESE],
+    options: [
+      "Some rooms feel too dark",
+      "Some rooms are too bright or have glare",
+      "Rooms feel too hot or too cold",
+      "Temperatures vary significantly between rooms",
+      "Condensation appears on windows",
+      "The home sometimes feels humid or damp",
+      "There are recurring musty or unusual odors",
+      "Dust builds up quickly",
+      "Outside or indoor noise is disruptive",
+      "Storage does not match how we live",
+      "Some spaces are difficult to clean or maintain",
+      "Furniture or layout makes movement awkward",
+      "I struggle to find calm or quiet spaces",
+      "Some spaces feel visually overwhelming or overstimulating",
+      "Work or homework spaces do not function well",
+      NONE_OF_THESE,
+      "Other",
+    ],
+  },
+  {
+    id: "biggestDailyIssue",
+    type: "single-select",
+    label: () => "Which ONE issue affects everyday life in your home the most?",
+    // Dynamic: choices are the Q8 selections, excluding "None of these".
+    options: (answers) =>
+      fromPriorSelection(answers, "regularlyNoticedIssues", [NONE_OF_THESE]),
+    showIf: (answers) =>
+      fromPriorSelection(answers, "regularlyNoticedIssues", [NONE_OF_THESE]).length > 0,
+  },
+  {
+    id: "improvementAttempt",
+    type: "single-select",
+    label: () => "Have you tried to improve this issue?",
+    showIf: (answers) =>
+      typeof answers.biggestDailyIssue === "string" && answers.biggestDailyIssue.length > 0,
+    options: [
+      "Yes, and it helped",
+      "Yes, but it did not fully solve the problem",
+      "I researched solutions but did not act",
+      "No, I do not know where to start",
+      "No, it is not a priority yet",
+    ],
+  },
+  {
+    id: "attemptedOrResearched",
+    type: "open-text",
+    label: () => "Tell us briefly what you tried, considered, or searched for.",
+    placeholder: "What you tried, considered, or searched for...",
+    showIf: (answers) =>
+      answers.improvementAttempt === "Yes, and it helped" ||
+      answers.improvementAttempt === "Yes, but it did not fully solve the problem" ||
+      answers.improvementAttempt === "I researched solutions but did not act",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// SECTION 4 — DECISIONS
+// ---------------------------------------------------------------------------
+const decisions: Question[] = [
+  {
+    id: "delayedDecision",
+    type: "single-select",
+    label: () =>
+      "In the past year, have you delayed a home purchase or improvement because you were unsure what to choose or what to prioritize?",
+    options: ["Yes", "No", "Not sure"],
+  },
+  {
+    id: "delayedDecisionDescription",
+    type: "open-text",
+    label: () => "What decision were you trying to make?",
+    helperText: () =>
+      "For example: choosing paint, replacing flooring, improving a child's room, buying an air purifier, planning lighting, selecting a countertop, or deciding whether a renovation was worth it.",
+    showIf: (answers) => answers.delayedDecision === "Yes",
+  },
+  {
+    id: "decisionDifficulties",
+    type: "multi-select",
+    label: () => "What made the decision difficult?",
+    helperText: () => "Select up to 4.",
+    maxSelect: 4,
+    showIf: (answers) => answers.delayedDecision === "Yes",
+    options: [
+      "Too many options",
+      "Conflicting information online",
+      "I did not know which sources to trust",
+      "I could not tell whether the change would meaningfully improve everyday life",
+      "I could not tell whether the upgrade was worth the cost",
+      "I did not understand the material or product claims",
+      "I was worried about making an expensive mistake",
+      "Advice was too generic for my home or household",
+      "I did not know what to prioritize first",
+      "I needed to balance budget, quality, and wellbeing",
+      "I needed to consider my family's specific needs",
+      "I did not have time to research",
+      "Other",
+    ],
+  },
+  {
+    id: "adviceSources",
+    type: "multi-select",
+    label: () => "Where do you currently go for home advice?",
+    options: [
+      "Google",
+      "ChatGPT or another AI tool",
+      "YouTube",
+      "Instagram",
+      "Pinterest",
+      "Reddit",
+      "Home improvement store",
+      "Contractor",
+      "Architect or interior designer",
+      "Friends or family",
+      "Product reviews",
+      "Manufacturer websites",
+      "Other",
+    ],
+  },
+  {
+    id: "adviceVsMarketingConfidence",
+    type: "rating",
+    label: () =>
+      "How confident are you that you can tell the difference between useful guidance, product marketing, and generic advice?",
+    ratingLabels: { min: "Not confident at all", max: "Very confident" },
+  },
+];
+
+// ---------------------------------------------------------------------------
+// SECTION 5 — PLANS
+// ---------------------------------------------------------------------------
+const plans: Question[] = [
+  {
+    id: "projectsNext12Months",
+    type: "single-select",
+    label: () => "Are you planning any home purchases or projects in the next 12 months?",
+    options: ["Yes", "Maybe", "No"],
+  },
   {
     id: "upcomingProjects",
     type: "multi-select",
-    label: () => "Are you considering any home projects in the next 12 months?",
-    required: true,
-    options: (answers) =>
-      prioritize(
-        [
-          "Paint",
-          "Furniture/decor updates",
-          "Kitchen update",
-          "Bathroom update",
-          "Lighting update",
-          "Flooring",
-          "Basement",
-          "Kids' room",
-          "Home office",
-          "Storage/organization",
-          "Air quality improvements",
-          "Rental property improvements",
-          "Whole-home remodel",
-          "No specific project yet",
-        ],
-        isInvestor(answers)
-          ? ["Rental property improvements"]
-          : isParent(answers)
-            ? ["Kids' room"]
-            : []
-      ),
-  },
-  {
-    id: "budgetRange",
-    type: "single-select",
-    label: (answers) =>
-      isRenter(answers)
-        ? "What home improvement or setup budget feels realistic for your next project?"
-        : "What budget range feels realistic for your next home project?",
+    label: () => "What are you considering?",
+    showIf: (answers) =>
+      answers.projectsNext12Months === "Yes" || answers.projectsNext12Months === "Maybe",
     options: [
-      "Under $250",
-      "$250-$1,000",
-      "$1,000-$5,000",
-      "$5,000-$15,000",
-      "$15,000-$50,000",
-      "$50,000+",
-      "Not sure",
-    ],
-  },
-  {
-    id: "designConfidence",
-    type: "rating",
-    label: () => "How confident do you feel making design and material decisions?",
-    ratingLabels: { min: "I second-guess everything", max: "Very confident" },
-  },
-  {
-    id: "confidenceHelpers",
-    type: "multi-select",
-    label: () => "What would make you feel more confident?",
-    options: [
-      "A clear step-by-step plan",
-      "A vetted product/material list",
-      "A budget calculator",
-      "A checklist before buying",
-      "AI help with options",
-      "Architect-reviewed guidance",
-      "Before/after examples",
-      "A personalized room report",
-      "Someone to review my plan",
-    ],
-  },
-  {
-    id: "fearedMistake",
-    type: "open-text",
-    label: () => "What is one mistake you worry about making?",
-  },
-];
-
-const section5: Question[] = [
-  {
-    id: "aiUsage",
-    type: "single-select",
-    label: () =>
-      "Have you used AI tools like ChatGPT, Claude, or Gemini for home/design questions?",
-    options: ["Frequently", "Sometimes", "Once or twice", "Never"],
-  },
-  {
-    id: "aiUseCases",
-    type: "multi-select",
-    label: () => "What did you use AI for?",
-    helperText: () => "Tell us what worked, or didn't — this helps us build something better.",
-    showIf: (answers) => typeof answers.aiUsage === "string" && answers.aiUsage !== "Never" && answers.aiUsage !== undefined,
-    options: [
-      "Design ideas",
-      "Product research",
-      "Budget planning",
-      "DIY instructions",
-      "Room layouts",
-      "Material comparisons",
-      "Contractor questions",
-      "Maintenance questions",
+      "Painting",
+      "Flooring",
+      "Kitchen updates",
+      "Bathroom updates",
+      "Lighting",
+      "Furniture",
+      "Mattress or bedroom products",
+      "Storage or organization",
+      "Home office",
+      "Child's room or family space",
+      "Basement",
+      "Windows or doors",
+      "Heating, cooling, or ventilation",
+      "Buying a home",
+      "Larger renovation",
       "Other",
     ],
   },
   {
-    id: "aiConcerns",
+    id: "hardestUpcomingDecision",
+    type: "single-select",
+    label: () => "Which upcoming decision feels hardest right now?",
+    // Dynamic: choices are the Q17 selections.
+    options: (answers) => fromPriorSelection(answers, "upcomingProjects"),
+    showIf: (answers) => fromPriorSelection(answers, "upcomingProjects").length > 0,
+  },
+  {
+    id: "comparisonPriorities",
     type: "multi-select",
-    label: () => "What worries you about using AI for home improvement?",
+    label: () =>
+      "When comparing home products, materials, or improvement options, what matters most to you?",
+    helperText: () => "Select up to 5.",
+    maxSelect: 5,
     options: [
-      "It may give wrong advice",
-      "It may not understand my home",
-      "It may suggest unsafe ideas",
-      "It may not know real products/materials",
-      "It may not match my budget",
-      "I do not know how to prompt it",
-      "I am not worried",
+      "Price",
+      "Durability",
+      "Appearance",
+      "Ease of maintenance",
+      "Installation difficulty",
+      "How the choice may affect indoor air",
+      "Material ingredients or emissions",
+      "Sustainability",
+      "Energy performance",
+      "Comfort or sensory experience",
+      "How well it supports my household's needs",
+      "Longevity",
+      "Resale value",
+      "Professional recommendation",
+      "Verified certifications or standards",
+    ],
+  },
+  {
+    id: "wishSomeoneWouldTellMe",
+    type: "open-text",
+    label: () =>
+      "What do you wish someone would tell you before you spend money on your next home project?",
+    placeholder: "In your own words...",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// SECTION 6 — WELLBUILT
+// ---------------------------------------------------------------------------
+const concept: Question[] = [
+  {
+    id: "usefulnessRating",
+    type: "rating",
+    label: () => "How useful would this be to you?",
+    ratingLabels: { min: "Not useful", max: "Extremely useful" },
+  },
+  {
+    id: "mostValuableParts",
+    type: "multi-select",
+    label: () => "Which part sounds most valuable?",
+    helperText: () => "Select up to 3.",
+    maxSelect: 3,
+    options: [
+      "Knowing what to prioritize first",
+      "Getting guidance based on my specific home and household",
+      "Comparing materials or products through more than just price and appearance",
+      "Understanding tradeoffs",
+      "Avoiding expensive mistakes",
+      "Knowing what may not be worth spending money on",
+      "Understanding how a decision may affect comfort or everyday wellbeing",
+      "Creating a step-by-step project plan",
+      "Getting questions to ask a contractor",
+      "Making more informed material choices",
+      "Balancing budget, durability, wellbeing, and sustainability",
       "Other",
     ],
   },
   {
-    id: "aiTrustScore",
-    type: "rating",
-    label: () =>
-      "Would you trust an architect-reviewed AI tool to help plan healthier home improvements?",
-    required: true,
-    ratingLabels: { min: "I would not trust it", max: "I would be very interested" },
+    id: "mostLikelyProduct",
+    type: "single-select",
+    label: () => "Which would you be most likely to use?",
+    options: [
+      "A free personalized Home Snapshot",
+      "A personalized Home Priorities Plan",
+      "A tool to compare two materials or home options",
+      "A wellness-informed renovation decision planner",
+      "An AI home decision advisor",
+      "A room-specific planning guide",
+      "None of these",
+    ],
   },
   {
-    id: "trustBuilders",
-    type: "multi-select",
-    label: () => "What would make an AI home tool feel trustworthy?",
+    id: "preferredRecommendationFormat",
+    type: "single-select",
+    label: () => "How would you prefer to receive personalized home guidance?",
     options: [
-      "Clear sources",
-      "Architect-reviewed guidance",
-      "Product/material explanations",
-      "Safety disclaimers",
-      "Room-by-room recommendations",
-      "Budget ranges",
-      "Photos/examples",
-      "Ability to upload room photos later",
-      "Simple language",
+      "Interactive online results",
+      "Downloadable PDF plan",
+      "AI chat or advisor",
+      "Email recommendations over several days",
+      "A digital workbook or toolkit",
+      "No preference",
     ],
   },
 ];
 
-const section6: Question[] = [
+// ---------------------------------------------------------------------------
+// SECTION 7 — VALUE
+// ---------------------------------------------------------------------------
+const value: Question[] = [
   {
-    id: "productInterest",
-    type: "multi-select",
-    label: () => "Which WellBuilt Spaces tools would interest you most?",
-    helperText: () => "Choose up to 4.",
-    required: true,
-    maxSelect: 4,
-    options: (answers) =>
-      prioritize(
-        [
-          "Healthy Home Score",
-          "Personalized Healthy Home Audit",
-          "Room-by-room improvement plan",
-          "Healthy materials guide",
-          "Low-VOC product shopping guide",
-          "Remodel planning toolkit",
-          "DIY renovation roadmap",
-          "Budget calculator",
-          "Lighting planner",
-          "Kids' room wellness guide",
-          "Rental property healthy upgrade checklist",
-          "AI prompt toolkit for home projects",
-        ],
-        isInvestor(answers)
-          ? ["Rental property healthy upgrade checklist"]
-          : isParent(answers)
-            ? ["Kids' room wellness guide"]
-            : []
-      ),
-  },
-  {
-    id: "firstProductChoice",
-    type: "single-select",
-    label: () => "Which would you most likely use first?",
-    required: true,
-    options: (answers) => {
-      const q25 = section6[0];
-      const base =
-        typeof q25.options === "function" ? q25.options(answers) : (q25.options ?? []);
-      return base;
-    },
-  },
-  {
-    id: "priceRange",
+    id: "reasonableOneTimePrice",
     type: "single-select",
     label: () =>
-      "If a digital toolkit saved you hours of research and helped avoid mistakes, what price would feel reasonable?",
-    required: true,
+      "If a personalized plan helped you prioritize home improvements, consider wellbeing and material tradeoffs, and avoid unnecessary spending, what would feel like a reasonable one-time price?",
     options: [
-      "Free only",
-      "Under $20",
-      "$20-$49",
-      "$50-$99",
-      "$100-$249",
-      "$250+",
+      "I would only use a free version",
+      "Under $25",
+      "$25–49",
+      "$50–99",
+      "$100–199",
+      "$200+",
     ],
   },
   {
-    id: "preferredFormat",
-    type: "single-select",
-    label: () => "Which format would you prefer?",
-    required: true,
-    options: [
-      "One-time PDF guide/toolkit",
-      "Interactive web questionnaire with personalized results",
-      "Notion/Google Sheets toolkit",
-      "Self-paced mini-course",
-      "Monthly membership",
-      "One-hour expert review",
-      "AI assistant subscription",
-    ],
+    id: "willingnessToPayReason",
+    type: "open-text",
+    label: () =>
+      "What would make personalized home decision support valuable enough for you to pay for?",
+    placeholder: "In your own words...",
   },
   {
-    id: "paymentTrigger",
+    id: "distrustReason",
     type: "open-text",
-    label: () => "What would make this worth paying for?",
-  },
-  {
-    id: "purchaseObjection",
-    type: "open-text",
-    label: () => "What would make you NOT buy this?",
+    label: () => "What would make you NOT trust a tool like this?",
+    placeholder: "In your own words...",
   },
 ];
 
-const section7: Question[] = [
+// ---------------------------------------------------------------------------
+// SECTION 8 — FINAL
+// ---------------------------------------------------------------------------
+const final: Question[] = [
   {
-    id: "earlyAccess",
+    id: "architectQuestion",
+    type: "open-text",
+    label: () =>
+      "If you could ask an architect one question about making your home better support the way you live, what would you ask?",
+    placeholder: "Your question...",
+  },
+  {
+    id: "earlyAccessInterest",
     type: "single-select",
-    label: () => "Would you like to receive early access to the first WellBuilt Spaces tool?",
-    required: true,
+    label: () => "Would you like early access to the WellBuilt Home Snapshot?",
     options: ["Yes", "Maybe", "No"],
   },
   {
     id: "email",
     type: "email",
-    label: () => "What's the best email for early access?",
+    label: () => "Where should we send your early access?",
+    helperText: () =>
+      "We'll only use your email to share WellBuilt Spaces updates and early-access opportunities.",
     required: true,
-    showIf: (answers) => answers.earlyAccess === "Yes" || answers.earlyAccess === "Maybe",
+    showIf: (answers) =>
+      answers.earlyAccessInterest === "Yes" || answers.earlyAccessInterest === "Maybe",
   },
   {
     id: "interviewInterest",
     type: "single-select",
-    label: () => "Would you be open to a 20-minute conversation about your home challenges?",
-    options: ["Yes", "Maybe later", "No"],
-  },
-  {
-    id: "finalNotes",
-    type: "open-text",
-    label: () =>
-      "Anything else you wish existed to help people create healthier, better-designed homes?",
+    label: () => "Would you be open to a short 20-minute research conversation?",
+    options: ["Yes", "Maybe", "No"],
   },
 ];
 
 export const sections: Section[] = [
   {
-    id: "about-your-home",
+    id: "home",
     step: 1,
-    title: "About your home",
-    helperText: "A few basics to help us understand your household.",
-    questions: section1,
+    progressLabel: "Home",
+    title: "First, tell us a little about your home.",
+    helperText: "A few basics to help us understand your space.",
+    questions: home,
   },
   {
-    id: "home-challenges",
+    id: "people",
     step: 2,
-    title: "Your home challenges",
-    helperText: "What's frustrating you, and how urgent does it feel?",
-    questions: section2,
+    progressLabel: "People",
+    title: "A home should support the people living in it.",
+    helperText: "Who it's for, and what matters most to them right now.",
+    questions: people,
   },
   {
-    id: "healthy-home-awareness",
+    id: "space",
     step: 3,
-    title: "Healthy home awareness",
-    helperText: "What healthy home means to you today.",
-    questions: section3,
+    progressLabel: "Space",
+    title: "Now think about how your home feels and functions day to day.",
+    helperText: "What you notice, and whether you've tried to change it.",
+    questions: space,
   },
   {
-    id: "renovation-decision-making",
+    id: "decisions",
     step: 4,
-    title: "Renovation and decision-making",
-    helperText: "Your upcoming projects and how confident you feel about them.",
-    questions: section4,
+    progressLabel: "Decisions",
+    title: "Home decisions can get complicated quickly.",
+    helperText: "How you decide, and where it gets hard.",
+    questions: decisions,
   },
   {
-    id: "ai-digital-tools",
+    id: "plans",
     step: 5,
-    title: "AI and digital tools",
-    helperText: "How you feel about AI-assisted home guidance.",
-    questions: section5,
+    progressLabel: "Plans",
+    title: "What decisions are coming next?",
+    helperText: "Projects on your horizon and what you weigh when comparing options.",
+    questions: plans,
   },
   {
-    id: "product-pricing-validation",
+    id: "wellbuilt",
     step: 6,
-    title: "Product and pricing validation",
-    helperText: "What we should build first, and what it's worth to you.",
-    questions: section6,
+    progressLabel: "WellBuilt",
+    title: "Imagine a different way to make home decisions.",
+    helperText: "A quick reaction to what we're exploring.",
+    conceptCard: {
+      eyebrow: "WellBuilt Spaces",
+      body: [
+        "A personalized home decision tool that considers your home, household priorities, budget, and upcoming projects to help you understand what to prioritize, what to consider, and what may not be worth your money right now.",
+        "Built around architectural thinking and trusted public guidance—not sensors, home testing, or generic product lists.",
+      ],
+    },
+    questions: concept,
   },
   {
-    id: "early-access",
-    step: 7,
-    title: "Early access",
-    helperText: "Optional — only if you'd like to stay in the loop.",
-    questions: section7,
+    id: "value",
+    step: 6,
+    progressLabel: "WellBuilt",
+    title: "One last question about value.",
+    helperText: "What this kind of support might be worth to you.",
+    questions: value,
+  },
+  {
+    id: "final",
+    step: 6,
+    progressLabel: "WellBuilt",
+    title: "Help us build something genuinely useful.",
+    helperText: "A few open questions, then you're done.",
+    questions: final,
   },
 ];
 
-export const totalSteps = sections.length;
+/** Number of distinct progress stages (Home → People → Space → Decisions → Plans → WellBuilt). */
+export const totalSteps = Math.max(...sections.map((s) => s.step));

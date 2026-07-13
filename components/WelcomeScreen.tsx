@@ -9,12 +9,17 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
         WellBuilt Spaces
       </span>
       <h1 className="font-serif text-3xl sm:text-4xl leading-tight text-foreground max-w-lg">
-        How healthy and well-designed does your home feel?
+        Your home comes with hundreds of decisions. Which ones are actually
+        worth your attention?
       </h1>
       <p className="text-base sm:text-lg text-muted max-w-md leading-relaxed">
-        This 5-minute questionnaire helps us understand what people need most
-        when creating healthier, more functional homes. Your answers will
-        help shape the first WellBuilt Spaces tools.
+        We&rsquo;re exploring a new way to help people make more confident home
+        and renovation decisions—considering not just cost and appearance, but
+        how a space supports everyday life and wellbeing.
+      </p>
+      <p className="text-base sm:text-lg text-muted max-w-md leading-relaxed">
+        This short questionnaire takes about 5 minutes. Your answers will help
+        shape WellBuilt Spaces.
       </p>
       <button
         type="button"
@@ -24,8 +29,7 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
         Start the questionnaire
       </button>
       <p className="text-sm text-muted max-w-sm">
-        Created by an architect exploring practical, AI-assisted tools for
-        healthier homes.
+        No technical home knowledge required.
       </p>
     </div>
   );
