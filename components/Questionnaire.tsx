@@ -1,38 +1,37 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { sections, totalSteps } from "@/lib/questionnaire-data";
-import { Answers, WellBuiltValidationResponseV3 } from "@/lib/questionnaire-types";
-import { buildResponse } from "@/lib/build-response";
-import {
-  invalidQuestionIds,
-  isSectionValid,
-  reconcileAnswers,
-  visibleQuestions,
-} from "@/lib/validation";
+import type { Answers } from "@/types/questionnaire";
+import type { Snapshot as SnapshotType } from "@/types/home-profile";
+import { SCHEMA_VERSION } from "@/types/home-profile";
+import { SECTIONS, TOTAL_STEPS, invalidQuestionIds, isSectionValid } from "@/lib/sections";
+import { completionPercent } from "@/lib/profile";
+import { generateSnapshot } from "@/lib/snapshot";
+import { loadLegacyAnswers } from "@/lib/migrate";
+import { track } from "@/lib/analytics";
 import WelcomeScreen from "./WelcomeScreen";
-import ThankYouScreen from "./ThankYouScreen";
 import ProgressBar from "./ProgressBar";
 import QuestionCard from "./QuestionCard";
+import ReviewScreen from "./ReviewScreen";
+import Snapshot from "./Snapshot";
 
-type Phase = "welcome" | "questions" | "thank-you";
+type Phase = "welcome" | "questions" | "review" | "snapshot";
 
-const STORAGE_KEY = "wellbuilt-validation-v3";
+const STORAGE_KEY = "wellbuilt-home-profile-v4";
 
 type PersistedState = {
-  version: typeof STORAGE_KEY;
+  schemaVersion: typeof SCHEMA_VERSION;
   phase: Phase;
   sectionIndex: number;
   answers: Answers;
-  responseId: string;
+  profileId: string;
   startedAt: string;
+  snapshot?: SnapshotType;
 };
 
-function newResponseId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `resp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+function newId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `hp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 }
 
 export default function Questionnaire() {
@@ -40,87 +39,115 @@ export default function Questionnaire() {
   const [sectionIndex, setSectionIndex] = useState(0);
   const [answers, setAnswers] = useState<Answers>({});
   const [invalidIds, setInvalidIds] = useState<string[]>([]);
-  const [responseId, setResponseId] = useState<string>("");
-  const [startedAt, setStartedAt] = useState<string>("");
-  const [finalResponse, setFinalResponse] = useState<WellBuiltValidationResponseV3 | null>(null);
+  const [profileId, setProfileId] = useState("");
+  const [startedAt, setStartedAt] = useState("");
+  const [snapshot, setSnapshot] = useState<SnapshotType | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Prevents saving to storage before we've attempted to restore from it.
   const hydrated = useRef(false);
-  // Guards against a duplicate final submission (e.g. double-click on Submit).
-  const submitted = useRef(false);
+  const answeredOnce = useRef<Set<string>>(new Set());
+  const completedRef = useRef(false);
 
-  // Restore in-progress state on mount (QA Path E: refresh mid-way).
+  const currentSection = SECTIONS[sectionIndex];
+
+  // Restore in-progress state, or migrate a previous-version saved response.
+  // This is a one-time hydrate-from-localStorage on mount (an external system),
+  // which is exactly what effects are for — the setState calls are intentional.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const saved = JSON.parse(raw) as PersistedState;
-        if (saved && saved.version === STORAGE_KEY) {
+        if (saved && saved.schemaVersion === SCHEMA_VERSION) {
           setPhase(saved.phase);
           setSectionIndex(saved.sectionIndex ?? 0);
           setAnswers(saved.answers ?? {});
-          setResponseId(saved.responseId || newResponseId());
+          setProfileId(saved.profileId || newId());
           setStartedAt(saved.startedAt || new Date().toISOString());
-          if (saved.phase === "thank-you") submitted.current = true;
+          if (saved.snapshot) setSnapshot(saved.snapshot);
+          if (saved.phase === "snapshot") completedRef.current = true;
+          hydrated.current = true;
+          return;
         }
       }
+      // No V4 state — try mapping an older saved questionnaire.
+      const legacy = loadLegacyAnswers();
+      if (legacy && Object.keys(legacy.answers).length > 0) {
+        setAnswers(legacy.answers);
+        setProfileId(newId());
+        setStartedAt(new Date().toISOString());
+        // Stay on welcome; the user resumes into a pre-filled V4 questionnaire.
+      }
     } catch {
-      // Corrupt or unavailable storage — start fresh.
+      // Corrupt/unavailable storage — start fresh.
     }
     hydrated.current = true;
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Persist progress whenever it changes (only after the restore attempt).
+  // Persist progress.
   useEffect(() => {
     if (!hydrated.current) return;
     try {
-      if (phase === "welcome") {
+      if (phase === "welcome" && Object.keys(answers).length === 0) {
         window.localStorage.removeItem(STORAGE_KEY);
         return;
       }
       const toSave: PersistedState = {
-        version: STORAGE_KEY,
+        schemaVersion: SCHEMA_VERSION,
         phase,
         sectionIndex,
         answers,
-        responseId,
+        profileId,
         startedAt,
+        snapshot: snapshot ?? undefined,
       };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     } catch {
-      // Storage unavailable — progress simply won't persist.
+      /* storage unavailable */
     }
-  }, [phase, sectionIndex, answers, responseId, startedAt]);
+  }, [phase, sectionIndex, answers, profileId, startedAt, snapshot]);
 
-  const currentSection = sections[sectionIndex];
+  // Best-effort abandonment tracking.
+  useEffect(() => {
+    const onLeave = () => {
+      if (completedRef.current) return;
+      if (phase === "questions" || phase === "review") {
+        track("questionnaire_abandoned", {
+          lastModule: currentSection?.module ?? "review",
+          completionPercent: completionPercent(answers),
+        });
+      }
+    };
+    window.addEventListener("pagehide", onLeave);
+    return () => window.removeEventListener("pagehide", onLeave);
+  }, [phase, currentSection, answers]);
 
   const startQuestionnaire = () => {
-    if (!responseId) setResponseId(newResponseId());
-    if (!startedAt) setStartedAt(new Date().toISOString());
+    const id = profileId || newId();
+    setProfileId(id);
+    setStartedAt((prev) => prev || new Date().toISOString());
     setPhase("questions");
+    track("questionnaire_started");
   };
 
   const handleAnswer = (id: string, value: string | string[] | number) => {
-    // Clear any dependent answers invalidated by this change (e.g. changing a
-    // parent select removes stale hidden or dynamic child answers).
-    setAnswers((prev) => reconcileAnswers({ ...prev, [id]: value }));
+    setAnswers((prev) => ({ ...prev, [id]: value }));
     setInvalidIds((prev) => prev.filter((qId) => qId !== id));
+    if (!answeredOnce.current.has(id)) {
+      answeredOnce.current.add(id);
+      const q = currentSection?.questions.find((qq) => qq.id === id);
+      // Structural only — never the answer value.
+      track("question_answered", { questionId: id, type: q?.type ?? "unknown" });
+    }
   };
 
-  const submit = (finalAnswers: Answers) => {
-    if (submitted.current) return;
-    submitted.current = true;
-    const response = buildResponse(finalAnswers, {
-      responseId: responseId || newResponseId(),
-      startedAt: startedAt || new Date().toISOString(),
-      completedAt: new Date().toISOString(),
-      completionStatus: "completed",
-    });
-    // TODO: replace this console log with a real submission —
-    // e.g. POST to Supabase, Airtable, Google Sheets, or Formspree.
-    console.log("WellBuilt Spaces questionnaire response:", response);
-    setFinalResponse(response);
-    setPhase("thank-you");
+  const goToSection = (index: number) => {
+    setInvalidIds([]);
+    setSectionIndex(index);
+    setPhase("questions");
+    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   };
 
   const handleNext = () => {
@@ -129,11 +156,12 @@ export default function Questionnaire() {
       return;
     }
     setInvalidIds([]);
-    if (sectionIndex === sections.length - 1) {
-      submit(answers);
-      return;
+    track("section_completed", { module: currentSection.module, index: sectionIndex });
+    if (sectionIndex === SECTIONS.length - 1) {
+      setPhase("review");
+    } else {
+      setSectionIndex((i) => i + 1);
     }
-    setSectionIndex((i) => i + 1);
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   };
 
@@ -147,70 +175,93 @@ export default function Questionnaire() {
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   };
 
-  const handleEmailFromThankYou = (email: string) => {
-    const merged = reconcileAnswers({
-      ...answers,
-      email,
-      earlyAccessInterest: answers.earlyAccessInterest || "Yes",
+  async function fetchSnapshot(currentAnswers: Answers): Promise<SnapshotType> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    try {
+      const res = await fetch("/api/generate-snapshot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers: currentAnswers }),
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      const data = (await res.json()) as { snapshot?: SnapshotType };
+      if (!data.snapshot || !Array.isArray(data.snapshot.topActions) || data.snapshot.topActions.length !== 3) {
+        throw new Error("invalid snapshot");
+      }
+      return data.snapshot;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  const submit = async () => {
+    if (completedRef.current || submitting) return;
+    setSubmitting(true);
+    let result: SnapshotType;
+    try {
+      result = await fetchSnapshot(answers);
+    } catch {
+      // AI unavailable or failed — deterministic fallback keeps results working.
+      result = generateSnapshot(answers);
+    }
+    completedRef.current = true;
+    setSnapshot(result);
+    setPhase("snapshot");
+    setSubmitting(false);
+    track("questionnaire_completed", { completionPercent: completionPercent(answers) });
+    track("snapshot_generated", {
+      generatedBy: result.generatedBy,
+      actionCount: result.topActions.length,
     });
-    setAnswers(merged);
-    const response = buildResponse(merged, {
-      responseId: responseId || newResponseId(),
-      startedAt: startedAt || new Date().toISOString(),
-      completedAt: new Date().toISOString(),
-      completionStatus: "completed",
-    });
-    // TODO: replace this console log with a real submission target.
-    console.log("WellBuilt Spaces late email capture:", response);
-    setFinalResponse(response);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   };
 
   if (phase === "welcome") {
     return <WelcomeScreen onStart={startQuestionnaire} />;
   }
 
-  if (phase === "thank-you") {
-    const wantsEarlyAccess =
-      finalResponse?.research.earlyAccessInterest !== "Yes" &&
-      finalResponse?.research.earlyAccessInterest !== "Maybe";
+  if (phase === "snapshot" && snapshot) {
     return (
-      <ThankYouScreen showEmailCta={wantsEarlyAccess} onEmailSubmit={handleEmailFromThankYou} />
+      <Snapshot
+        snapshot={snapshot}
+        onEmailSubmit={() => track("email_submitted", { where: "snapshot" })}
+        onExpandAction={(actionId) => track("recommendation_expanded", { actionId })}
+        onRate={(rating, intended) =>
+          track("snapshot_rated", { rating, intended: intended ?? "none" })
+        }
+        onUpgradeClick={() => track("upgrade_waitlist_clicked")}
+      />
     );
   }
 
-  const questions = visibleQuestions(currentSection, answers);
-  const isLastSection = sectionIndex === sections.length - 1;
+  if (phase === "review") {
+    return (
+      <ReviewScreen
+        answers={answers}
+        onEditSection={goToSection}
+        onSubmit={submit}
+        onBack={() => goToSection(SECTIONS.length - 1)}
+        submitting={submitting}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8">
       <ProgressBar
-        step={currentSection.step}
-        totalSteps={totalSteps}
-        label={currentSection.progressLabel}
+        step={sectionIndex + 1}
+        totalSteps={TOTAL_STEPS}
+        label={currentSection.module}
       />
 
       <div>
-        <h2 className="font-serif text-2xl sm:text-3xl text-foreground">{currentSection.title}</h2>
-        <p className="mt-1 text-base text-muted">{currentSection.helperText}</p>
+        <h2 className="font-serif text-2xl sm:text-3xl text-foreground">{currentSection.module}</h2>
       </div>
 
-      {currentSection.conceptCard && (
-        <div className="rounded-2xl border border-border bg-card p-5 sm:p-6 flex flex-col gap-3">
-          {currentSection.conceptCard.eyebrow && (
-            <span className="text-sm font-medium tracking-wide text-moss uppercase">
-              {currentSection.conceptCard.eyebrow}
-            </span>
-          )}
-          {currentSection.conceptCard.body.map((paragraph, i) => (
-            <p key={i} className="text-base text-foreground leading-relaxed">
-              {paragraph}
-            </p>
-          ))}
-        </div>
-      )}
-
       <div className="flex flex-col gap-8">
-        {questions.map((question) => (
+        {currentSection.questions.map((question) => (
           <QuestionCard
             key={question.id}
             question={question}
@@ -236,7 +287,7 @@ export default function Questionnaire() {
           onClick={handleNext}
           className="rounded-full bg-moss px-8 py-3 text-base font-medium text-white transition-colors duration-150 hover:bg-moss-dark"
         >
-          {isLastSection ? "Submit" : "Next"}
+          {sectionIndex === SECTIONS.length - 1 ? "Review" : "Next"}
         </button>
       </div>
     </div>

@@ -16,9 +16,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "WellBuilt Spaces — Which home decisions are worth your attention?",
+  title: "WellBuilt Home — Your personalized Home Snapshot",
   description:
-    "A short questionnaire helping shape WellBuilt Spaces — a wellness-informed way to make more confident home and renovation decisions.",
+    "Answer a few questions about your home and goals to get a short, personalized Home Snapshot: your three highest-priority improvements, why they matter, and what you can do yourself. Educational guidance based on your answers—not testing or inspection.",
 };
 
 export default function RootLayout({
