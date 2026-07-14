@@ -46,12 +46,14 @@ export default function WelcomeScreen({ onStart }: WelcomeScreenProps) {
             </div>
           </div>
 
-          {/* Image side */}
+          {/* Image side.
+              Hero photo: Unsplash (free license) — photo-1497211419994-14ae40a3c7a3.
+              Self-hosted at public/hero-abstract.jpg. */}
           <div
             role="img"
-            aria-label="Rolling green hills under a soft sky"
+            aria-label="Soft, out-of-focus green light"
             className="relative min-h-[260px] sm:min-h-[340px] md:min-h-full bg-cover bg-center order-1 md:order-2"
-            style={{ backgroundImage: "url('/hero-hills.svg')" }}
+            style={{ backgroundImage: "url('/hero-abstract.jpg')" }}
           >
             <Pill className="left-5 top-5">Cleaner air</Pill>
             <Pill className="right-5 top-1/2">Better light</Pill>
