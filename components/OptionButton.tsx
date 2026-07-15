@@ -12,10 +12,10 @@ export default function OptionButton({ label, selected, onClick }: OptionButtonP
       aria-checked={selected}
       data-option={label}
       onClick={onClick}
-      className={`w-full text-left rounded-2xl border px-5 py-4 text-base transition-colors duration-150
+      className={`w-full text-left rounded-2xl border px-5 py-4 text-base transition-all duration-150
         ${
           selected
-            ? "border-moss bg-moss text-white"
+            ? "border-moss bg-moss text-white scale-[1.02]"
             : "border-border bg-card text-foreground hover:border-moss hover:bg-sage/15"
         }`}
     >

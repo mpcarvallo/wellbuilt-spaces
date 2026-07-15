@@ -36,7 +36,7 @@ export default function ReviewScreen({
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h2 className="font-serif text-2xl sm:text-3xl text-foreground">
+        <h2 className="font-serif text-2xl sm:text-3xl font-bold text-moss">
           Review your answers
         </h2>
         <p className="mt-1 text-base text-muted">
@@ -48,12 +48,12 @@ export default function ReviewScreen({
         {SECTIONS.map((section, index) => (
           <div key={section.module} className="rounded-2xl border border-border bg-card p-5">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="font-serif text-lg text-foreground">{section.module}</h3>
+              <h3 className="font-serif text-lg text-moss">{section.module}</h3>
               <button
                 type="button"
                 data-edit-section={index}
                 onClick={() => onEditSection(index)}
-                className="text-sm font-medium text-moss hover:text-moss-dark transition-colors duration-150"
+                className="text-sm font-semibold text-moss hover:text-moss-dark transition-colors duration-150"
               >
                 Edit
               </button>

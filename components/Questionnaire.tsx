@@ -14,6 +14,7 @@ import ProgressBar from "./ProgressBar";
 import QuestionCard from "./QuestionCard";
 import ReviewScreen from "./ReviewScreen";
 import Snapshot from "./Snapshot";
+import SectionIcon from "./SectionIcon";
 
 type Phase = "welcome" | "questions" | "review" | "snapshot";
 
@@ -256,20 +257,23 @@ export default function Questionnaire() {
         label={currentSection.module}
       />
 
-      <div>
-        <h2 className="font-serif text-2xl sm:text-3xl text-foreground">{currentSection.module}</h2>
-      </div>
+      <div key={sectionIndex} className="animate-section-in flex flex-col gap-8">
+        <div className="flex items-center gap-2.5">
+          <SectionIcon module={currentSection.module} />
+          <h2 className="font-serif text-2xl sm:text-3xl text-moss">{currentSection.module}</h2>
+        </div>
 
-      <div className="flex flex-col gap-8">
-        {currentSection.questions.map((question) => (
-          <QuestionCard
-            key={question.id}
-            question={question}
-            answers={answers}
-            onAnswer={handleAnswer}
-            showError={invalidIds.includes(question.id)}
-          />
-        ))}
+        <div className="flex flex-col gap-8">
+          {currentSection.questions.map((question) => (
+            <QuestionCard
+              key={question.id}
+              question={question}
+              answers={answers}
+              onAnswer={handleAnswer}
+              showError={invalidIds.includes(question.id)}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="flex items-center justify-between pt-4 border-t border-border">

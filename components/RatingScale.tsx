@@ -20,10 +20,10 @@ export default function RatingScale({ value, onChange, minLabel, maxLabel }: Rat
               maxLabel && n === 5 ? `, ${maxLabel}` : ""
             }`}
             onClick={() => onChange(n)}
-            className={`flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full border text-base font-medium transition-colors duration-150
+            className={`flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full border text-base font-medium transition-all duration-150
               ${
                 value === n
-                  ? "border-moss bg-moss text-white"
+                  ? "border-moss bg-moss text-white scale-105"
                   : "border-border bg-card text-foreground hover:border-moss hover:bg-sage/15"
               }`}
           >

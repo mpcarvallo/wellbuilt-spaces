@@ -1,0 +1,129 @@
+import type { Snapshot, SnapshotAction } from "@/types/home-profile";
+import { COST_LABELS, EFFORT_LABELS, CONFIDENCE_LABELS, PILLAR_LABELS } from "@/lib/labels";
+
+const MOSS = "#536b4f";
+const CREAM = "#f7f4ee";
+const CARD = "#fffdf8";
+const BORDER = "#e5ded2";
+const FOREGROUND = "#222222";
+const MUTED = "#6b6b63";
+
+/** Snapshot content may be AI-generated — escape before interpolating into HTML. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function actionHtml(action: SnapshotAction, rank: number): string {
+  const tags = [
+    EFFORT_LABELS[action.effort],
+    COST_LABELS[action.costBand],
+    action.diyFriendly ? "DIY-friendly" : "Professional recommended",
+    CONFIDENCE_LABELS[action.confidence],
+    ...action.categories.map((c) => PILLAR_LABELS[c]),
+  ]
+    .map(escapeHtml)
+    .join(" &nbsp;&middot;&nbsp; ");
+
+  return `
+    <tr>
+      <td style="padding:20px 0;border-top:1px solid ${BORDER};">
+        <p style="margin:0 0 6px;font-size:13px;color:${MUTED};">Priority ${rank}</p>
+        <p style="margin:0 0 8px;font-size:18px;font-weight:600;color:${FOREGROUND};">${escapeHtml(action.title)}</p>
+        <p style="margin:0 0 10px;font-size:14px;line-height:1.5;color:${FOREGROUND};">${escapeHtml(action.why)}</p>
+        <p style="margin:0;font-size:12px;color:${MUTED};">${tags}</p>
+      </td>
+    </tr>`;
+}
+
+function actionText(action: SnapshotAction, rank: number): string {
+  const tags = [
+    EFFORT_LABELS[action.effort],
+    COST_LABELS[action.costBand],
+    action.diyFriendly ? "DIY-friendly" : "Professional recommended",
+    CONFIDENCE_LABELS[action.confidence],
+    ...action.categories.map((c) => PILLAR_LABELS[c]),
+  ].join(" · ");
+  return `${rank}. ${action.title}\n${action.why}\n${tags}\n`;
+}
+
+export function snapshotEmailSubject(): string {
+  return "Your WellBuilt Spaces Home Snapshot";
+}
+
+export function snapshotEmailHtml(snapshot: Snapshot): string {
+  const actionsHtml = snapshot.topActions.map(actionHtml).join("");
+  return `
+  <div style="background:${CREAM};padding:32px 16px;font-family:Georgia,'Times New Roman',serif;">
+    <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background:${CARD};border:1px solid ${BORDER};border-radius:16px;overflow:hidden;">
+      <tr>
+        <td style="padding:28px 28px 8px;">
+          <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:${MOSS};font-family:Arial,sans-serif;">WellBuilt Spaces</p>
+          <h1 style="margin:0;font-size:22px;line-height:1.35;color:${FOREGROUND};">${escapeHtml(snapshot.intro)}</h1>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:8px 28px 4px;">
+          <p style="margin:0;font-size:13px;color:${MUTED};font-family:Arial,sans-serif;">Your top three priorities:</p>
+          <table role="presentation" width="100%" style="border-collapse:collapse;">
+            ${actionsHtml}
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:20px 28px 28px;border-top:1px solid ${BORDER};">
+          <p style="margin:0;font-size:12px;line-height:1.6;color:${MUTED};font-family:Arial,sans-serif;">${escapeHtml(snapshot.disclaimer)}</p>
+        </td>
+      </tr>
+    </table>
+  </div>`;
+}
+
+export function snapshotEmailText(snapshot: Snapshot): string {
+  const actions = snapshot.topActions.map(actionText).join("\n");
+  return `WellBuilt Spaces — Your Home Snapshot\n\n${snapshot.intro}\n\n${actions}\n${snapshot.disclaimer}\n`;
+}
+
+export function waitlistNotifySubject(): string {
+  return "New WellBuilt Spaces waitlist signup";
+}
+
+export function waitlistNotifyHtml(email: string): string {
+  return `
+  <div style="background:${CREAM};padding:32px 16px;font-family:Arial,sans-serif;">
+    <table role="presentation" width="100%" style="max-width:480px;margin:0 auto;background:${CARD};border:1px solid ${BORDER};border-radius:16px;">
+      <tr>
+        <td style="padding:24px 28px;">
+          <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:${MOSS};">WellBuilt Spaces</p>
+          <h1 style="margin:0 0 12px;font-size:18px;color:${FOREGROUND};">New waitlist signup</h1>
+          <p style="margin:0;font-size:15px;color:${FOREGROUND};">${escapeHtml(email)}</p>
+        </td>
+      </tr>
+    </table>
+  </div>`;
+}
+
+export function waitlistConfirmSubject(): string {
+  return "You're on the WellBuilt Spaces waitlist";
+}
+
+export function waitlistConfirmHtml(): string {
+  return `
+  <div style="background:${CREAM};padding:32px 16px;font-family:Georgia,'Times New Roman',serif;">
+    <table role="presentation" width="100%" style="max-width:480px;margin:0 auto;background:${CARD};border:1px solid ${BORDER};border-radius:16px;">
+      <tr>
+        <td style="padding:28px;">
+          <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:${MOSS};font-family:Arial,sans-serif;">WellBuilt Spaces</p>
+          <h1 style="margin:0 0 10px;font-size:20px;color:${FOREGROUND};">You're on the list</h1>
+          <p style="margin:0;font-size:14px;line-height:1.6;color:${FOREGROUND};">
+            Thanks for your interest in the full Home Roadmap. We'll let you know as soon as it's ready.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </div>`;
+}
