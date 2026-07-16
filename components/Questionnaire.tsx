@@ -216,6 +216,13 @@ export default function Questionnaire() {
       generatedBy: result.generatedBy,
       actionCount: result.topActions.length,
     });
+    // Best-effort visibility notification — never awaited, never blocks the
+    // visitor's results, and any failure here is silently ignored.
+    fetch("/api/notify-completion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answers }),
+    }).catch(() => {});
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   };
 

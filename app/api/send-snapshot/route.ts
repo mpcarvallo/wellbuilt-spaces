@@ -1,7 +1,13 @@
 import type { Snapshot } from "@/types/home-profile";
-import { getResendClient, FROM_EMAIL } from "@/lib/resend";
+import { getResendClient, FROM_EMAIL, NOTIFY_EMAIL } from "@/lib/resend";
 import { isValidEmail } from "@/lib/validate-email";
-import { snapshotEmailSubject, snapshotEmailHtml, snapshotEmailText } from "@/lib/email-templates";
+import {
+  snapshotEmailSubject,
+  snapshotEmailHtml,
+  snapshotEmailText,
+  snapshotRequestNotifySubject,
+  snapshotRequestNotifyHtml,
+} from "@/lib/email-templates";
 
 export const runtime = "nodejs";
 
@@ -57,6 +63,19 @@ export async function POST(req: Request): Promise<Response> {
     if (error) {
       return Response.json({ error: "Could not send that email. Please try again." }, { status: 502 });
     }
+
+    // Best-effort visibility for the site owner — never blocks or fails the visitor's request.
+    if (NOTIFY_EMAIL) {
+      resend.emails
+        .send({
+          from: FROM_EMAIL,
+          to: NOTIFY_EMAIL,
+          subject: snapshotRequestNotifySubject(),
+          html: snapshotRequestNotifyHtml(email),
+        })
+        .catch(() => {});
+    }
+
     return Response.json({ ok: true });
   } catch {
     return Response.json({ error: "Could not send that email. Please try again." }, { status: 502 });
