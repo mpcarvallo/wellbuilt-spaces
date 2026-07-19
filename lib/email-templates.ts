@@ -1,7 +1,8 @@
 import type { Answers } from "@/types/questionnaire";
 import type { Snapshot, SnapshotAction } from "@/types/home-profile";
 import { COST_LABELS, EFFORT_LABELS, CONFIDENCE_LABELS, PILLAR_LABELS } from "@/lib/labels";
-import { labelForValue, labelsForValues } from "@/lib/answer-labels";
+import { displayAnswer } from "@/lib/answer-labels";
+import { SECTIONS } from "@/lib/sections";
 
 const MOSS = "#536b4f";
 const CREAM = "#f7f4ee";
@@ -149,48 +150,41 @@ export function snapshotRequestNotifyHtml(email: string): string {
   </div>`;
 }
 
-const str = (v: unknown): string | undefined =>
-  typeof v === "string" && v.length > 0 ? v : undefined;
-const arr = (v: unknown): string[] => (Array.isArray(v) ? (v as string[]) : []);
-
-function summaryRow(label: string, value: string | undefined): string {
-  if (!value) return "";
-  return `<tr><td style="padding:4px 0;font-size:13px;color:${MUTED};width:140px;vertical-align:top;">${escapeHtml(label)}</td><td style="padding:4px 0;font-size:13px;color:${FOREGROUND};">${escapeHtml(value)}</td></tr>`;
-}
-
 export function completionNotifySubject(): string {
   return "Someone completed a WellBuilt Snapshot";
 }
 
-/** Best-effort visibility into questionnaire completions. Never includes open-text verbatim beyond the visitor's own note field, which the questionnaire tells respondents not to fill with sensitive details. */
+function answerRow(label: string, value: string): string {
+  return `<tr><td style="padding:3px 0;font-size:12px;color:${MUTED};width:190px;vertical-align:top;">${escapeHtml(label)}</td><td style="padding:3px 0;font-size:13px;color:${FOREGROUND};vertical-align:top;">${escapeHtml(value)}</td></tr>`;
+}
+
+function sectionHtml(section: (typeof SECTIONS)[number], answers: Answers): string {
+  const rows = section.questions
+    .map((q) => ({ q, value: displayAnswer(q, answers) }))
+    .filter(({ value }) => value !== "—")
+    .map(({ q, value }) => answerRow(q.title, value))
+    .join("");
+  if (!rows) return "";
+  return `
+    <tr>
+      <td style="padding:14px 0 4px;">
+        <p style="margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${MOSS};">${escapeHtml(section.module)}</p>
+        <table role="presentation" width="100%" style="border-collapse:collapse;">${rows}</table>
+      </td>
+    </tr>`;
+}
+
+/** Full-fidelity per-respondent record — every answered question, grouped exactly like the app's own Review screen. Sent to the site owner only, never to the visitor. */
 export function completionNotifyHtml(answers: Answers): string {
-  const goals = labelsForValues("primary_goals", arr(answers.primary_goals)).join(", ");
-  const homeType = str(answers.home_type) && labelForValue("home_type", String(answers.home_type));
-  const ownership = str(answers.ownership) && labelForValue("ownership", String(answers.ownership));
-  const budget = str(answers.budget) && labelForValue("budget", String(answers.budget));
-  const firstRoom = str(answers.first_room) && labelForValue("first_room", String(answers.first_room));
-  const note = str(answers.open_note);
-
-  const rows = [
-    summaryRow("Goals", goals || undefined),
-    summaryRow("Home", [homeType, ownership].filter(Boolean).join(" · ") || undefined),
-    summaryRow("Budget", budget),
-    summaryRow("Wants to start with", firstRoom),
-  ].join("");
-
+  const sections = SECTIONS.map((s) => sectionHtml(s, answers)).join("");
   return `
   <div style="background:${CREAM};padding:32px 16px;font-family:Arial,sans-serif;">
-    <table role="presentation" width="100%" style="max-width:520px;margin:0 auto;background:${CARD};border:1px solid ${BORDER};border-radius:16px;">
+    <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background:${CARD};border:1px solid ${BORDER};border-radius:16px;">
       <tr>
         <td style="padding:24px 28px;">
           <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:${MOSS};">WellBuilt Spaces</p>
-          <h1 style="margin:0 0 12px;font-size:18px;color:${FOREGROUND};">A questionnaire was just completed</h1>
-          <table role="presentation" style="border-collapse:collapse;">${rows}</table>
-          ${
-            note
-              ? `<p style="margin:16px 0 0;padding-top:12px;border-top:1px solid ${BORDER};font-size:13px;line-height:1.6;color:${FOREGROUND};"><em>${escapeHtml(note)}</em></p>`
-              : ""
-          }
+          <h1 style="margin:0 0 8px;font-size:18px;color:${FOREGROUND};">A questionnaire was just completed</h1>
+          <table role="presentation" width="100%" style="border-collapse:collapse;border-top:1px solid ${BORDER};">${sections}</table>
         </td>
       </tr>
     </table>

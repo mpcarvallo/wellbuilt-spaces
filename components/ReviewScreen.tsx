@@ -1,7 +1,8 @@
 "use client";
 
-import type { Answers, Question } from "@/types/questionnaire";
+import type { Answers } from "@/types/questionnaire";
 import { SECTIONS } from "@/lib/sections";
+import { displayAnswer } from "@/lib/answer-labels";
 
 type ReviewScreenProps = {
   answers: Answers;
@@ -10,21 +11,6 @@ type ReviewScreenProps = {
   onBack: () => void;
   submitting: boolean;
 };
-
-function displayValue(question: Question, answers: Answers): string {
-  const v = answers[question.id];
-  if (v === undefined || (Array.isArray(v) && v.length === 0) || v === "") {
-    return "—";
-  }
-  if (question.type === "scale" && typeof v === "number") {
-    return `${v} / 5`;
-  }
-  const labelFor = (val: string) =>
-    question.options?.find((o) => o.value === val)?.label ?? val;
-  if (Array.isArray(v)) return v.map(labelFor).join(", ");
-  if (typeof v === "string") return question.options ? labelFor(v) : v;
-  return String(v);
-}
 
 export default function ReviewScreen({
   answers,
@@ -62,7 +48,7 @@ export default function ReviewScreen({
               {section.questions.map((q) => (
                 <div key={q.id} className="flex flex-col gap-0.5">
                   <dt className="text-sm text-muted">{q.title}</dt>
-                  <dd className="text-sm text-foreground">{displayValue(q, answers)}</dd>
+                  <dd className="text-sm text-foreground">{displayAnswer(q, answers)}</dd>
                 </div>
               ))}
             </dl>
