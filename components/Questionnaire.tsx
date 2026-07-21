@@ -61,13 +61,19 @@ export default function Questionnaire() {
       if (raw) {
         const saved = JSON.parse(raw) as PersistedState;
         if (saved && saved.schemaVersion === SCHEMA_VERSION) {
+          // A finished session (they already got their Snapshot) isn't "in
+          // progress" — don't auto-resume straight to it on a later visit.
+          // Only questions/review (unfinished work) are worth restoring.
+          if (saved.phase === "snapshot") {
+            window.localStorage.removeItem(STORAGE_KEY);
+            hydrated.current = true;
+            return;
+          }
           setPhase(saved.phase);
           setSectionIndex(saved.sectionIndex ?? 0);
           setAnswers(saved.answers ?? {});
           setProfileId(saved.profileId || newId());
           setStartedAt(saved.startedAt || new Date().toISOString());
-          if (saved.snapshot) setSnapshot(saved.snapshot);
-          if (saved.phase === "snapshot") completedRef.current = true;
           hydrated.current = true;
           return;
         }
