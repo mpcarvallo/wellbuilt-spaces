@@ -234,7 +234,6 @@ export default function Questionnaire() {
     return (
       <Snapshot
         snapshot={snapshot}
-        onEmailSubmit={() => track("email_submitted", { where: "snapshot" })}
         onExpandAction={(actionId) => track("recommendation_expanded", { actionId })}
         onRate={(rating, intended) =>
           track("snapshot_rated", { rating, intended: intended ?? "none" })

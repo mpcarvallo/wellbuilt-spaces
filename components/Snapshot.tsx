@@ -9,7 +9,6 @@ import Disclaimer from "./Disclaimer";
 
 type SnapshotProps = {
   snapshot: SnapshotType;
-  onEmailSubmit: (email: string) => void;
   onExpandAction?: (actionId: string) => void;
   onRate?: (rating: number, intendedActionId: string | null) => void;
   onUpgradeClick?: () => void;
@@ -28,77 +27,6 @@ async function postJson(url: string, body: unknown): Promise<{ ok: boolean; erro
   } catch {
     return { ok: false, error: "Something went wrong. Please try again." };
   }
-}
-
-function EmailCaptureCard({
-  snapshot,
-  onSubmit,
-}: {
-  snapshot: SnapshotType;
-  onSubmit: (email: string) => void;
-}) {
-  const [email, setEmail] = useState("");
-  const [sending, setSending] = useState(false);
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  if (done) {
-    return (
-      <div className="rounded-2xl border border-border bg-card px-5 py-4 text-center text-sm text-moss-dark">
-        Sent — check your inbox for your full Snapshot.
-      </div>
-    );
-  }
-
-  return (
-    <form
-      onSubmit={async (e) => {
-        e.preventDefault();
-        const trimmed = email.trim();
-        if (!trimmed || sending) return;
-        setSending(true);
-        setError(null);
-        const result = await postJson("/api/send-snapshot", { email: trimmed, snapshot });
-        setSending(false);
-        if (!result.ok) {
-          setError(result.error ?? "Something went wrong. Please try again.");
-          return;
-        }
-        onSubmit(trimmed);
-        setDone(true);
-      }}
-      className="rounded-2xl border border-border bg-card p-5 sm:p-6 flex flex-col gap-3"
-    >
-      <label htmlFor="snapshot-email" className="font-serif text-lg text-foreground">
-        Want your full Snapshot and a saved profile?
-      </label>
-      <p className="text-sm text-muted">
-        We&rsquo;ll email your complete set of priorities and let you pick up where you left off.
-        We only use your email for WellBuilt updates.
-      </p>
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <input
-          id="snapshot-email"
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          className="w-full rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground placeholder:text-muted/70 focus:border-moss transition-colors duration-150"
-        />
-        <button
-          type="submit"
-          disabled={sending}
-          className="shrink-0 rounded-full bg-moss px-6 py-3 text-base font-medium text-white transition-colors duration-150 hover:bg-moss-dark disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {sending ? "Sending…" : "Send it"}
-        </button>
-      </div>
-      {error && <p className="text-sm text-clay">{error}</p>}
-    </form>
-  );
 }
 
 function WaitlistCard({ onJoined }: { onJoined?: () => void }) {
@@ -164,7 +92,6 @@ function WaitlistCard({ onJoined }: { onJoined?: () => void }) {
 
 export default function Snapshot({
   snapshot,
-  onEmailSubmit,
   onExpandAction,
   onRate,
   onUpgradeClick,
@@ -192,8 +119,6 @@ export default function Snapshot({
         {first && (
           <ActionCard action={first} rank={1} defaultExpanded onExpand={onExpandAction} />
         )}
-
-        <EmailCaptureCard snapshot={snapshot} onSubmit={onEmailSubmit} />
 
         {rest.map((action, i) => (
           <ActionCard key={action.id} action={action} rank={i + 2} onExpand={onExpandAction} />

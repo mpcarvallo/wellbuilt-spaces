@@ -27,7 +27,6 @@ never sent to analytics.
 | `snapshot_generated` | Snapshot rendered | `generatedBy` (`ai`/`rules`), `actionCount` |
 | `snapshot_rated` | User submits the usefulness rating | `rating` (1–5), `intended` (action id or `none`) |
 | `recommendation_expanded` | User expands an action's steps | `actionId` |
-| `email_submitted` | User submits the results-page email | `where` (no email) |
 | `upgrade_waitlist_clicked` | User clicks "Join the waitlist" | — |
 
 ## Wiring a real provider

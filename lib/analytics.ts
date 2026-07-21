@@ -20,7 +20,6 @@ export type AnalyticsEvent =
   | "snapshot_generated"
   | "snapshot_rated"
   | "recommendation_expanded"
-  | "email_submitted"
   | "upgrade_waitlist_clicked";
 
 type Primitive = string | number | boolean;
