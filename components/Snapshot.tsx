@@ -29,10 +29,18 @@ async function postJson(url: string, body: unknown): Promise<{ ok: boolean; erro
   }
 }
 
-function WaitlistCard({ onJoined }: { onJoined?: () => void }) {
+function WaitlistCard({
+  snapshot,
+  onJoined,
+}: {
+  snapshot: SnapshotType;
+  onJoined?: () => void;
+}) {
   const [email, setEmail] = useState("");
+  const [sendSnapshot, setSendSnapshot] = useState(true);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
+  const [snapshotSent, setSnapshotSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   return (
@@ -44,7 +52,10 @@ function WaitlistCard({ onJoined }: { onJoined?: () => void }) {
       </p>
 
       {done ? (
-        <p className="text-sm text-moss-dark">You&rsquo;re on the list — we&rsquo;ll be in touch.</p>
+        <p className="text-sm text-moss-dark">
+          You&rsquo;re on the list — we&rsquo;ll be in touch.
+          {snapshotSent && " Check your inbox for your Snapshot."}
+        </p>
       ) : (
         <form
           onSubmit={async (e) => {
@@ -53,36 +64,53 @@ function WaitlistCard({ onJoined }: { onJoined?: () => void }) {
             if (!trimmed || sending) return;
             setSending(true);
             setError(null);
-            const result = await postJson("/api/waitlist", { email: trimmed });
+            const [waitlistResult, snapshotResult] = await Promise.all([
+              postJson("/api/waitlist", { email: trimmed }),
+              sendSnapshot
+                ? postJson("/api/send-snapshot", { email: trimmed, snapshot })
+                : Promise.resolve({ ok: false }),
+            ]);
             setSending(false);
-            if (!result.ok) {
-              setError(result.error ?? "Something went wrong. Please try again.");
+            if (!waitlistResult.ok) {
+              setError(waitlistResult.error ?? "Something went wrong. Please try again.");
               return;
             }
+            setSnapshotSent(sendSnapshot && snapshotResult.ok);
             setDone(true);
             onJoined?.();
           }}
-          className="flex flex-col gap-2 sm:flex-row sm:justify-center"
+          className="flex flex-col items-center gap-3"
         >
-          <input
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            aria-label="Email for the waitlist"
-            className="w-full sm:max-w-xs rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground placeholder:text-muted/70 focus:border-moss transition-colors duration-150"
-          />
-          <button
-            type="submit"
-            data-nav="upgrade"
-            disabled={sending}
-            className="shrink-0 rounded-full bg-moss px-8 py-3 text-base font-medium text-white transition-colors duration-150 hover:bg-moss-dark disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {sending ? "Joining…" : "Join the waitlist"}
-          </button>
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
+            <input
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              aria-label="Email for the waitlist"
+              className="w-full sm:max-w-xs rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground placeholder:text-muted/70 focus:border-moss transition-colors duration-150"
+            />
+            <button
+              type="submit"
+              data-nav="upgrade"
+              disabled={sending}
+              className="shrink-0 rounded-full bg-moss px-8 py-3 text-base font-medium text-white transition-colors duration-150 hover:bg-moss-dark disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sending ? "Joining…" : "Join the waitlist"}
+            </button>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              checked={sendSnapshot}
+              onChange={(e) => setSendSnapshot(e.target.checked)}
+              className="h-4 w-4 rounded border-border text-moss focus:ring-moss"
+            />
+            Also send me my Snapshot by email
+          </label>
         </form>
       )}
       {error && <p className="text-sm text-clay">{error}</p>}
@@ -162,7 +190,7 @@ export default function Snapshot({
         onSubmit={(rating, intended) => onRate?.(rating, intended)}
       />
 
-      <WaitlistCard onJoined={onUpgradeClick} />
+      <WaitlistCard snapshot={snapshot} onJoined={onUpgradeClick} />
 
       <Disclaimer text={snapshot.disclaimer} />
     </div>
