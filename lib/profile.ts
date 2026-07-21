@@ -38,59 +38,49 @@ export function deriveGroups(answers: Answers): HomeProfileGroups {
   return {
     goals: arr(answers.primary_goals),
     household: {
-      members: arr(answers.household),
-      sensitivities: arr(answers.health_sensitivities),
+      members: arr(answers.household_composition),
+      sensitivities: arr(answers.household_considerations),
     },
     home: {
       type: str(answers.home_type),
-      ownership: str(answers.ownership),
-      yearBuilt: str(answers.year_built),
+      ownership: str(answers.own_or_rent),
+      yearBuilt: str(answers.home_age),
       zip: str(answers.zip_code),
-      timeHorizon: str(answers.time_horizon),
+      timeHorizon: str(answers.home_plans),
     },
     capacity: {
       budget: str(answers.budget),
-      diyLevel: str(answers.diy_level),
+      diyLevel: str(answers.diy_comfort),
       weeklyTime: str(answers.weekly_time),
     },
     lifestyle: {
-      cooking: str(answers.cooking),
+      cooking: str(answers.cook_frequency),
     },
     air: {
-      stoveType: str(answers.stove_type),
+      stoveType: str(answers.cooktop_type),
       kitchenExhaust: str(answers.kitchen_exhaust),
-      moistureSigns: arr(answers.moisture),
-      bathExhaust: str(answers.bath_exhaust),
-    },
-    water: {
-      source: str(answers.drinking_water),
-      concerns: arr(answers.water_concerns),
+      moistureSigns: arr(answers.moisture_signs),
     },
     light: {
-      nightFactors: arr(answers.night_light),
+      nightFactors: arr(answers.bedroom_disruptors),
       daylight: str(answers.daylight),
     },
     comfort: {
-      bedroomSleep: num(answers.bedroom_sleep),
-      clutter: str(answers.clutter),
-      thermal: str(answers.thermal_comfort),
+      bedroomSleep: num(answers.bedroom_restfulness),
+      clutter: str(answers.clutter_frequency),
+      thermal: str(answers.room_temperature),
+      noise: str(answers.acoustics),
     },
     materials: {
-      fragranceSources: arr(answers.fragrance),
-      recentProjects: arr(answers.recent_projects),
-      flooring: str(answers.flooring),
-    },
-    sustainability: {
-      existingActions: arr(answers.energy_priorities),
+      fragranceSources: arr(answers.scented_products),
+      recentProjects: arr(answers.recent_changes),
     },
     maintenance: {
       hvacFilter: str(answers.hvac_filter),
-      confidence: num(answers.maintenance_confidence),
-      safetyChecks: arr(answers.safety_checks),
     },
     startingPoint: {
-      firstRoom: str(answers.first_room),
-      note: str(answers.open_note),
+      firstRoom: str(answers.priority_area),
+      note: str(answers.open_notes),
     },
   };
 }

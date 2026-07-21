@@ -52,7 +52,6 @@ export type ReportCategory =
   | "water"
   | "light_comfort"
   | "materials"
-  | "sustainability"
   | "maintenance";
 
 /** Profile-based indicator for a report category. NOT a measured score. */
@@ -113,11 +112,6 @@ export type HomeProfileGroups = {
     stoveType?: string;
     kitchenExhaust?: string;
     moistureSigns: string[];
-    bathExhaust?: string;
-  };
-  water: {
-    source?: string;
-    concerns: string[];
   };
   light: {
     nightFactors: string[];
@@ -127,19 +121,15 @@ export type HomeProfileGroups = {
     bedroomSleep?: number;
     clutter?: string;
     thermal?: string;
+    /** Self-reported noise levels (the "Sound" question). Not a decibel measurement. */
+    noise?: string;
   };
   materials: {
     fragranceSources: string[];
     recentProjects: string[];
-    flooring?: string;
-  };
-  sustainability: {
-    existingActions: string[];
   };
   maintenance: {
     hvacFilter?: string;
-    confidence?: number;
-    safetyChecks: string[];
   };
   startingPoint: {
     firstRoom?: string;

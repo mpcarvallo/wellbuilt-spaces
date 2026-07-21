@@ -7,9 +7,9 @@
  * reliably. This module maps what it can and LEAVES EVERYTHING ELSE BLANK —
  * it never invents an answer. New submissions always carry schemaVersion: 4.
  *
- * Mapped:  currentSituation→ownership, homeType→home_type,
- *          homeAge→year_built (unambiguous bands only),
- *          householdMembers→household, decisionInfluencingNeeds→health_sensitivities,
+ * Mapped:  currentSituation→own_or_rent, homeType→home_type,
+ *          homeAge→home_age (unambiguous bands only),
+ *          householdMembers→household_composition, decisionInfluencingNeeds→household_considerations,
  *          currentPriorities→primary_goals (max 3).
  * Not mapped (no reliable V4 equivalent): the V3 decision/attitude/pricing
  *          questions (delayedDecision, adviceSources, priceRange, ratings,
@@ -90,19 +90,19 @@ export function migrateV3ToV4(v3: Answers): Answers {
   const out: Answers = {};
 
   const ownership = mapSingle(OWNERSHIP_MAP, v3.currentSituation);
-  if (ownership) out.ownership = ownership;
+  if (ownership) out.own_or_rent = ownership;
 
   const homeType = mapSingle(HOME_TYPE_MAP, v3.homeType);
   if (homeType) out.home_type = homeType;
 
   const yearBuilt = mapSingle(YEAR_BUILT_MAP, v3.homeAge);
-  if (yearBuilt) out.year_built = yearBuilt;
+  if (yearBuilt) out.home_age = yearBuilt;
 
   const household = mapMulti(HOUSEHOLD_MAP, v3.householdMembers);
-  if (household.length) out.household = household;
+  if (household.length) out.household_composition = household;
 
   const sensitivities = mapMulti(SENSITIVITY_MAP, v3.decisionInfluencingNeeds);
-  if (sensitivities.length) out.health_sensitivities = sensitivities;
+  if (sensitivities.length) out.household_considerations = sensitivities;
 
   const goals = mapMulti(GOAL_MAP, v3.currentPriorities).slice(0, 3); // V4 max 3
   if (goals.length) out.primary_goals = goals;

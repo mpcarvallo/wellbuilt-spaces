@@ -9,23 +9,21 @@ const COSTS: CostBand[] = ["free", "under_100", "100_500", "500_2000", "over_200
 
 const PATH_A: Answers = {
   primary_goals: ["air", "sleep", "allergies"],
-  household: ["adults", "young_children"],
+  household_composition: ["adults", "young_children"],
   home_type: "house",
-  ownership: "own",
-  year_built: "1940_1977",
+  own_or_rent: "own",
+  home_age: "1940_1977",
   budget: "100_500",
-  diy_level: "medium",
-  cooking: "daily",
-  stove_type: "gas",
+  diy_comfort: "medium",
+  cook_frequency: "daily",
+  cooktop_type: "gas",
   kitchen_exhaust: "none",
-  moisture: ["musty", "leaks"],
-  bath_exhaust: "none",
+  moisture_signs: ["musty", "leaks"],
   hvac_filter: "old",
-  bedroom_sleep: 2,
-  night_light: ["outdoor_light", "noise"],
-  safety_checks: ["none"],
-  maintenance_confidence: 2,
-  first_room: "bedroom",
+  bedroom_restfulness: 2,
+  bedroom_disruptors: ["outdoor_light", "noise"],
+  acoustics: "frequent",
+  priority_area: "bedroom",
 };
 
 describe("recommendation engine", () => {
@@ -33,11 +31,6 @@ describe("recommendation engine", () => {
     expect(selectRecommendations(PATH_A).topActions.length).toBe(3);
     expect(selectRecommendations({}).topActions.length).toBe(3); // empty answers still work
     expect(selectRecommendations({ home_type: "condo" }).topActions.length).toBe(3);
-  });
-
-  it("keeps a triggered safety action in the top three", () => {
-    const ids = selectRecommendations(PATH_A).topActions.map((a) => a.id);
-    expect(ids).toContain("safety-alarms");
   });
 
   it("guarantees at least one action fits the stated budget", () => {
@@ -48,7 +41,7 @@ describe("recommendation engine", () => {
   });
 
   it("adds a landlord note for renters on professional actions", () => {
-    const renter: Answers = { ...PATH_A, ownership: "rent" };
+    const renter: Answers = { ...PATH_A, own_or_rent: "rent" };
     const moisture = selectRecommendations(renter).topActions.find((a) => a.id === "moisture-investigate");
     if (moisture) {
       expect(moisture.professionalNote?.toLowerCase()).toContain("landlord");
@@ -68,7 +61,7 @@ describe("snapshot output (matches API contract)", () => {
       expect(["high", "medium", "low"]).toContain(a.confidence);
       expect(a.categories.length).toBeGreaterThan(0);
     }
-    expect(snap.indicators.length).toBe(6);
+    expect(snap.indicators.length).toBe(5);
     expect(snap.disclaimer.toLowerCase()).toContain("not");
     // no diagnostic / health-score language leaks into the payload
     expect(JSON.stringify(snap)).not.toMatch(/healthy home score|we detected|your air is unsafe|certified healthy/i);

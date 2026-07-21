@@ -32,7 +32,6 @@ export const CATEGORY_LABELS: Record<ReportCategory, string> = {
   water: "Water and moisture",
   light_comfort: "Light and comfort",
   materials: "Materials",
-  sustainability: "Sustainability",
   maintenance: "Maintenance readiness",
 };
 
@@ -40,14 +39,17 @@ export const CATEGORY_LABELS: Record<ReportCategory, string> = {
  * Which questions feed each report category. Note this deliberately differs
  * from the raw `pillar` tags: the moisture question (tagged `air` in the data)
  * belongs to "Water and moisture," and light + comfort questions combine.
+ *
+ * No "sustainability" category: the current question set has no surviving
+ * sustainability question, so it was removed rather than left permanently
+ * empty. See docs/QUESTIONNAIRE.md for the current question list.
  */
 const CATEGORY_QUESTIONS: Record<ReportCategory, string[]> = {
-  air: ["stove_type", "kitchen_exhaust", "bath_exhaust"],
-  water: ["moisture", "drinking_water", "water_concerns"],
-  light_comfort: ["night_light", "daylight", "bedroom_sleep", "clutter", "thermal_comfort"],
-  materials: ["fragrance", "recent_projects", "flooring"],
-  sustainability: ["energy_priorities"],
-  maintenance: ["hvac_filter", "maintenance_confidence", "safety_checks"],
+  air: ["cooktop_type", "kitchen_exhaust"],
+  water: ["moisture_signs"],
+  light_comfort: ["bedroom_disruptors", "daylight", "bedroom_restfulness", "clutter_frequency", "room_temperature", "acoustics"],
+  materials: ["scented_products", "recent_changes"],
+  maintenance: ["hvac_filter"],
 };
 
 const BY_ID: Record<string, Question> = Object.fromEntries(

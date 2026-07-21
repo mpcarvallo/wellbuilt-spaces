@@ -13,11 +13,11 @@ describe("V3 → V4 migration", () => {
       currentPriorities: ["Better sleep", "Cleaner-feeling indoor air", "Less clutter"],
     };
     const v4 = migrateV3ToV4(v3);
-    expect(v4.ownership).toBe("own");
+    expect(v4.own_or_rent).toBe("own");
     expect(v4.home_type).toBe("house");
-    expect(v4.year_built).toBe("pre1940");
-    expect(v4.household).toEqual(["adults", "children"]);
-    expect(v4.health_sensitivities).toEqual(["allergies", "mobility"]);
+    expect(v4.home_age).toBe("pre1940");
+    expect(v4.household_composition).toEqual(["adults", "children"]);
+    expect(v4.household_considerations).toEqual(["allergies", "mobility"]);
     expect(v4.primary_goals).toEqual(["sleep", "air", "stress"]);
   });
 
@@ -27,8 +27,8 @@ describe("V3 → V4 migration", () => {
       currentSituation: "I am planning to buy", // no reliable ownership → not mapped
       delayedDecision: "Yes", // no V4 equivalent
     });
-    expect(v4.year_built).toBeUndefined();
-    expect(v4.ownership).toBeUndefined();
+    expect(v4.home_age).toBeUndefined();
+    expect(v4.own_or_rent).toBeUndefined();
     expect("delayedDecision" in v4).toBe(false);
   });
 

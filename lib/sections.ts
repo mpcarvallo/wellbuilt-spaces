@@ -27,8 +27,7 @@ export const TOTAL_STEPS = SECTIONS.length;
 
 /** Human-friendly labels for the 1–5 scale questions (data has no option list). */
 export const SCALE_LABELS: Record<string, { min: string; max: string }> = {
-  bedroom_sleep: { min: "Not restorative", max: "Very restorative" },
-  maintenance_confidence: { min: "Not confident", max: "Very confident" },
+  bedroom_restfulness: { min: "Not restorative", max: "Very restorative" },
 };
 
 /** Multi-select option values that clear all other selections when chosen. */

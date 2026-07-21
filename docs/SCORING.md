@@ -16,19 +16,24 @@ stored anywhere.
 
 ## Categories
 
-Indicators are grouped into six report categories (`lib/scoring.ts` →
+Indicators are grouped into five report categories (`lib/scoring.ts` →
 `CATEGORY_LABELS`). These deliberately differ from the questionnaire's raw
 `pillar` tags — the moisture question (tagged `air` in the data) belongs to
 "Water and moisture," and light + comfort questions combine:
 
 | Category | Questions that feed it |
 |---|---|
-| Air and ventilation | `stove_type`, `kitchen_exhaust`, `bath_exhaust` |
-| Water and moisture | `moisture`, `drinking_water`, `water_concerns` |
-| Light and comfort | `night_light`, `daylight`, `bedroom_sleep`, `clutter`, `thermal_comfort` |
-| Materials | `fragrance`, `recent_projects`, `flooring` |
-| Sustainability | `energy_priorities` |
-| Maintenance readiness | `hvac_filter`, `maintenance_confidence`, `safety_checks` |
+| Air and ventilation | `cooktop_type`, `kitchen_exhaust` |
+| Water and moisture | `moisture_signs` |
+| Light and comfort | `bedroom_disruptors`, `daylight`, `bedroom_restfulness`, `clutter_frequency`, `room_temperature`, `acoustics` |
+| Materials | `scented_products`, `recent_changes` |
+| Maintenance readiness | `hvac_filter` |
+
+There is no "Sustainability" category: the current question set has no
+surviving sustainability question (the old `energy_priorities` question was
+cut with no replacement), so the category was removed rather than left
+permanently showing "not enough detail yet" for every respondent. See
+`docs/QUESTIONNAIRE.md` for the full current question list and what changed.
 
 ## Method
 

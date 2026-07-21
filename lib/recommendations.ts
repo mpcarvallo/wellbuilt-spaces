@@ -6,6 +6,12 @@
  * confirm" language, and never asserts a hidden condition (no "we detected…",
  * no "your air is unsafe"). This engine is also the deterministic fallback used
  * when the AI endpoint is unavailable, so the results page always works.
+ *
+ * Some rules from the previous question set were retired because their
+ * triggering question no longer exists (bathroom exhaust, water source/
+ * concerns, flooring type, smoke/CO alarms, seasonal maintenance confidence,
+ * sustainability actions in place) — see docs/QUESTIONNAIRE.md for the
+ * current question list and what was cut.
  */
 
 import type { Answers, Pillar } from "@/types/questionnaire";
@@ -62,10 +68,10 @@ const RULES: Rule[] = [
     professionalNote: "A qualified HVAC contractor can confirm whether your hood vents outside and size an upgrade.",
     goals: ["air", "allergies"],
     trigger: (a) =>
-      eq(a.stove_type, "gas") ||
+      eq(a.cooktop_type, "gas") ||
       eq(a.kitchen_exhaust, "recirculating") ||
       eq(a.kitchen_exhaust, "none") ||
-      ((eq(a.cooking, "daily") || eq(a.cooking, "frequent")) && !eq(a.kitchen_exhaust, "outside")),
+      ((eq(a.cook_frequency, "daily") || eq(a.cook_frequency, "frequent")) && !eq(a.kitchen_exhaust, "outside")),
   },
   {
     id: "reduce-fragrance",
@@ -84,30 +90,9 @@ const RULES: Rule[] = [
     ],
     goals: ["air", "allergies", "materials"],
     trigger: (a) =>
-      has(a.fragrance, "air_freshener") || has(a.fragrance, "candles") || has(a.fragrance, "cleaners"),
-  },
-  {
-    id: "bath-exhaust",
-    title: "Use bathroom exhaust to manage moisture",
-    why: "Based on your answers, bathroom exhaust may be missing, uncertain, or only in some rooms. Running a fan that vents outside helps keep humidity down.",
-    categories: ["air", "water"],
-    costBand: "under_100",
-    effort: "quick",
-    diyFriendly: true,
-    impact: 2,
-    confidence: "medium",
-    steps: [
-      "Run the bathroom fan during showers and for 15–20 minutes after.",
-      "If a bathroom has no fan, keep the door open and crack a window to let moisture escape.",
-      "Consider a simple timer switch for fans you forget to turn off.",
-    ],
-    professionalNote: "A qualified contractor can confirm whether fans vent outside rather than into the attic.",
-    goals: ["air"],
-    trigger: (a) =>
-      eq(a.bath_exhaust, "none") ||
-      eq(a.bath_exhaust, "unknown") ||
-      eq(a.bath_exhaust, "some") ||
-      has(a.moisture, "condensation"),
+      has(a.scented_products, "air_freshener") ||
+      has(a.scented_products, "candles") ||
+      has(a.scented_products, "cleaners"),
   },
   {
     id: "moisture-investigate",
@@ -126,7 +111,8 @@ const RULES: Rule[] = [
     ],
     professionalNote: "Moisture and mold are hard to confirm remotely—a qualified inspector or remediation professional can identify the source and extent.",
     goals: ["allergies", "air"],
-    trigger: (a) => has(a.moisture, "leaks") || has(a.moisture, "staining") || has(a.moisture, "musty"),
+    trigger: (a) =>
+      has(a.moisture_signs, "leaks") || has(a.moisture_signs, "staining") || has(a.moisture_signs, "musty"),
   },
   {
     id: "hvac-filter",
@@ -163,56 +149,10 @@ const RULES: Rule[] = [
     ],
     goals: ["air", "allergies", "sleep"],
     trigger: (a) =>
-      has(a.health_sensitivities, "allergies") ||
-      has(a.health_sensitivities, "breathing") ||
-      has(a.moisture, "staining") ||
-      has(a.household, "pets"),
-  },
-  {
-    id: "water-info",
-    title: "Review your water quality info before buying a filter",
-    why: "Based on your answers, it's worth understanding what's actually in your water before spending on treatment, so any filter matches a real need.",
-    categories: ["water"],
-    costBand: "under_100",
-    effort: "afternoon",
-    diyFriendly: true,
-    impact: 2,
-    confidence: "medium",
-    steps: [
-      "For city water, read your utility's annual water quality report.",
-      "For well water, arrange appropriate testing for local concerns.",
-      "If you filter, pick one certified for the specific contaminant you care about.",
-    ],
-    professionalNote: "A certified water lab or plumber can test for specific contaminants a questionnaire can't.",
-    goals: ["sustainability"],
-    trigger: (a) =>
-      eq(a.drinking_water, "well") ||
-      eq(a.drinking_water, "bottled") ||
-      has(a.water_concerns, "taste") ||
-      has(a.water_concerns, "color"),
-  },
-  {
-    id: "older-plumbing",
-    title: "Ask about older plumbing",
-    why: "Based on your answers—an older home and a plumbing concern—it may be worth confirming what your supply lines are made of.",
-    categories: ["water"],
-    costBand: "500_2000",
-    effort: "professional",
-    diyFriendly: false,
-    impact: 2.5,
-    confidence: "low",
-    steps: [
-      "Note the home's age and any discoloration or taste concerns.",
-      "Ask a licensed plumber to identify service-line and fixture materials.",
-      "Follow their guidance on testing or replacement if needed.",
-    ],
-    professionalNote: "A licensed plumber or water test can confirm pipe materials—this can't be determined from answers alone.",
-    trigger: (a) =>
-      has(a.water_concerns, "old_plumbing") ||
-      ((eq(a.year_built, "pre1940") || eq(a.year_built, "1940_1977")) &&
-        !has(a.water_concerns, "none") &&
-        Array.isArray(a.water_concerns) &&
-        a.water_concerns.length > 0),
+      has(a.household_considerations, "allergies") ||
+      has(a.household_considerations, "breathing") ||
+      has(a.moisture_signs, "staining") ||
+      has(a.household_composition, "pets"),
   },
   {
     id: "sleep-environment",
@@ -231,11 +171,11 @@ const RULES: Rule[] = [
     ],
     goals: ["sleep", "focus", "stress"],
     trigger: (a) =>
-      scaleAtMost(a.bedroom_sleep, 3) ||
-      has(a.night_light, "outdoor_light") ||
-      has(a.night_light, "device_light") ||
-      has(a.night_light, "noise") ||
-      has(a.night_light, "temperature"),
+      scaleAtMost(a.bedroom_restfulness, 3) ||
+      has(a.bedroom_disruptors, "outdoor_light") ||
+      has(a.bedroom_disruptors, "device_light") ||
+      has(a.bedroom_disruptors, "noise") ||
+      has(a.bedroom_disruptors, "temperature"),
   },
   {
     id: "daylight",
@@ -271,7 +211,8 @@ const RULES: Rule[] = [
       "Add a small daily reset habit to keep it that way.",
     ],
     goals: ["stress", "focus"],
-    trigger: (a) => eq(a.clutter, "often") || eq(a.clutter, "daily") || has(a.night_light, "clutter"),
+    trigger: (a) =>
+      eq(a.clutter_frequency, "often") || eq(a.clutter_frequency, "daily") || has(a.bedroom_disruptors, "clutter"),
   },
   {
     id: "thermal-comfort",
@@ -289,51 +230,32 @@ const RULES: Rule[] = [
       "For whole-home discomfort, plan a professional assessment of insulation and HVAC.",
     ],
     professionalNote: "An HVAC or weatherization professional can diagnose whole-home comfort issues an assessment can't.",
-    goals: ["sustainability"],
     trigger: (a) =>
-      eq(a.thermal_comfort, "some_rooms") ||
-      eq(a.thermal_comfort, "whole_home") ||
-      eq(a.thermal_comfort, "sometimes"),
+      eq(a.room_temperature, "some_rooms") ||
+      eq(a.room_temperature, "whole_home") ||
+      eq(a.room_temperature, "sometimes"),
   },
   {
-    id: "safety-alarms",
-    title: "Test smoke and carbon monoxide alarms",
-    why: "Based on your answers, smoke or carbon monoxide alarms may not have been checked recently. This is a quick, high-value safety step.",
-    categories: ["maintenance"],
+    id: "manage-noise",
+    title: "Take a few steps to manage everyday noise",
+    why: "Based on your answers, noise is a regular presence in your home. A few targeted changes can meaningfully reduce how disruptive it feels.",
+    categories: ["comfort"],
     costBand: "under_100",
     effort: "quick",
     diyFriendly: true,
-    impact: 4,
-    confidence: "high",
-    safety: true,
-    steps: [
-      "Press the test button on each smoke and CO alarm.",
-      "Replace batteries, and replace units past the age on their label.",
-      "Make sure alarms are on every level and near sleeping areas.",
-    ],
-    goals: ["maintenance", "family_support"],
-    trigger: (a) =>
-      has(a.safety_checks, "none") ||
-      (Array.isArray(a.safety_checks) &&
-        (!a.safety_checks.includes("smoke") || !a.safety_checks.includes("co"))),
-  },
-  {
-    id: "maintenance-checklist",
-    title: "Start a simple seasonal maintenance checklist",
-    why: "Based on your answers, routine maintenance may be uncertain. A short recurring checklist helps prevent surprises.",
-    categories: ["maintenance"],
-    costBand: "free",
-    effort: "afternoon",
-    diyFriendly: true,
     impact: 2,
-    confidence: "high",
+    confidence: "medium",
     steps: [
-      "List the basics: filters, leaks under sinks, gutters, dryer vent, and alarms.",
-      "Assign each a season and a reminder.",
-      "Keep a running note of what you checked and when.",
+      "Note whether noise mostly comes from outside, inside, or both.",
+      "Add soft materials—rugs, curtains, upholstered furniture—to absorb sound in hard-surfaced rooms.",
+      "Weatherstrip doors and windows, which also helps block outside noise.",
+      "For persistent inside noise (HVAC, plumbing, appliances), keep a note of when it happens for a professional to reference.",
     ],
-    goals: ["maintenance"],
-    trigger: (a) => scaleAtMost(a.maintenance_confidence, 3) || has(a.safety_checks, "none"),
+    goals: ["sleep", "focus", "stress"],
+    trigger: (a) =>
+      eq(a.acoustics, "frequent") ||
+      eq(a.acoustics, "outside_occasional") ||
+      eq(a.acoustics, "inside_occasional"),
   },
   {
     id: "air-out-materials",
@@ -352,55 +274,11 @@ const RULES: Rule[] = [
     ],
     goals: ["materials", "air", "renovation"],
     trigger: (a) =>
-      has(a.recent_projects, "paint") ||
-      has(a.recent_projects, "flooring") ||
-      has(a.recent_projects, "cabinets") ||
-      has(a.recent_projects, "furniture") ||
-      has(a.recent_projects, "renovation"),
-  },
-  {
-    id: "soft-surface-cleaning",
-    title: "Clean soft surfaces to cut dust and allergens",
-    why: "Based on your answers—carpet plus allergy, breathing, or pet considerations—regular cleaning of soft surfaces can reduce dust and allergens.",
-    categories: ["materials", "air"],
-    costBand: "under_100",
-    effort: "afternoon",
-    diyFriendly: true,
-    impact: 2,
-    confidence: "medium",
-    steps: [
-      "Vacuum carpets and rugs regularly, ideally with a HEPA-filter vacuum.",
-      "Wash bedding weekly in warm water.",
-      "Consider washable rugs in high-traffic or pet areas.",
-    ],
-    goals: ["allergies", "air"],
-    trigger: (a) =>
-      eq(a.flooring, "carpet") &&
-      (has(a.health_sensitivities, "allergies") ||
-        has(a.health_sensitivities, "breathing") ||
-        has(a.household, "pets")),
-  },
-  {
-    id: "efficiency-wins",
-    title: "Add a couple of low-effort efficiency wins",
-    why: "Based on your answers, there's room for simple energy and water savings that also tend to improve comfort.",
-    categories: ["sustainability"],
-    costBand: "100_500",
-    effort: "afternoon",
-    diyFriendly: true,
-    impact: 1.5,
-    confidence: "medium",
-    steps: [
-      "Swap remaining bulbs for LEDs and add a programmable or smart thermostat.",
-      "Install low-flow aerators and showerheads.",
-      "Seal obvious drafts to reduce heating and cooling waste.",
-    ],
-    goals: ["sustainability"],
-    trigger: (a) =>
-      has(a.energy_priorities, "none") ||
-      (Array.isArray(a.energy_priorities) &&
-        !a.energy_priorities.includes("led") &&
-        !a.energy_priorities.includes("thermostat")),
+      has(a.recent_changes, "paint") ||
+      has(a.recent_changes, "flooring") ||
+      has(a.recent_changes, "cabinets") ||
+      has(a.recent_changes, "furniture") ||
+      has(a.recent_changes, "renovation"),
   },
 ];
 
@@ -425,9 +303,9 @@ function relevanceBonus(rule: Rule, a: Answers): number {
 
   // Family sensitivity boosts safety and air actions.
   const hasVulnerable =
-    has(a.household, "young_children") ||
-    has(a.household, "older_adults") ||
-    has(a.health_sensitivities, "mobility");
+    has(a.household_composition, "young_children") ||
+    has(a.household_composition, "older_adults") ||
+    has(a.household_considerations, "mobility");
   if (hasVulnerable && (rule.safety || rule.categories.includes("air"))) bonus += 0.75;
 
   return bonus;
@@ -441,7 +319,7 @@ function score(rule: Rule, a: Answers): number {
 }
 
 function toAction(rule: Rule, a: Answers): SnapshotAction {
-  const isRenter = eq(a.ownership, "rent");
+  const isRenter = eq(a.own_or_rent, "rent");
   // For renters, structural/system work becomes a landlord conversation.
   const professionalNote =
     isRenter && !rule.diyFriendly
@@ -453,7 +331,7 @@ function toAction(rule: Rule, a: Answers): SnapshotAction {
     why: rule.why,
     effort: rule.effort,
     costBand: rule.costBand,
-    diyFriendly: rule.diyFriendly && !eq(a.diy_level, "none") ? true : rule.diyFriendly,
+    diyFriendly: rule.diyFriendly && !eq(a.diy_comfort, "none") ? true : rule.diyFriendly,
     categories: rule.categories,
     confidence: rule.confidence,
     professionalNote,

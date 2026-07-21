@@ -59,13 +59,11 @@ GOALS (what they most want to improve): ${list(g.goals)}
 HOUSEHOLD: members = ${list(g.household.members)}; considerations = ${list(g.household.sensitivities)}
 HOME: type = ${val(g.home.type)}; ownership = ${val(g.home.ownership)}; year built = ${val(g.home.yearBuilt)}; plans = ${val(g.home.timeHorizon)}
 CAPACITY: budget = ${val(g.capacity.budget)}; DIY comfort = ${val(g.capacity.diyLevel)}; weekly time = ${val(g.capacity.weeklyTime)}
-AIR & KITCHEN: cooking frequency = ${val(g.lifestyle.cooking)}; cooktop = ${val(g.air.stoveType)}; kitchen exhaust = ${val(g.air.kitchenExhaust)}; bathroom exhaust = ${val(g.air.bathExhaust)}
+AIR & KITCHEN: cooking frequency = ${val(g.lifestyle.cooking)}; cooktop = ${val(g.air.stoveType)}; kitchen exhaust = ${val(g.air.kitchenExhaust)}
 MOISTURE SIGNS: ${list(g.air.moistureSigns)}
-WATER: source = ${val(g.water.source)}; concerns = ${list(g.water.concerns)}
-LIGHT & COMFORT: bedroom restfulness (1-5) = ${val(g.comfort.bedroomSleep)}; nighttime bedroom factors = ${list(g.light.nightFactors)}; daylight = ${val(g.light.daylight)}; clutter = ${val(g.comfort.clutter)}; thermal comfort = ${val(g.comfort.thermal)}
-MATERIALS: scented products = ${list(g.materials.fragranceSources)}; recent projects = ${list(g.materials.recentProjects)}; main flooring = ${val(g.materials.flooring)}
-SUSTAINABILITY (already in place): ${list(g.sustainability.existingActions)}
-MAINTENANCE: HVAC filter = ${val(g.maintenance.hvacFilter)}; maintenance confidence (1-5) = ${val(g.maintenance.confidence)}; safety checks done = ${list(g.maintenance.safetyChecks)}
+LIGHT & COMFORT: bedroom restfulness (1-5) = ${val(g.comfort.bedroomSleep)}; nighttime bedroom factors = ${list(g.light.nightFactors)}; daylight = ${val(g.light.daylight)}; clutter = ${val(g.comfort.clutter)}; thermal comfort = ${val(g.comfort.thermal)}; home noise level = ${val(g.comfort.noise)}
+MATERIALS: scented products = ${list(g.materials.fragranceSources)}; recent projects = ${list(g.materials.recentProjects)}
+MAINTENANCE: HVAC filter = ${val(g.maintenance.hvacFilter)}
 STARTING POINT: first area = ${val(g.startingPoint.firstRoom)}; note = ${val(g.startingPoint.note)}
 
 Return only the JSON object described in the system prompt.`;

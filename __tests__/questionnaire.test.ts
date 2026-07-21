@@ -5,8 +5,8 @@ import { REQUIRED_IDS, completionPercent } from "@/lib/profile";
 import type { Answers } from "@/types/questionnaire";
 
 describe("questionnaire structure", () => {
-  it("is data-driven with the full V4 question set", () => {
-    expect(questionnaireV4.length).toBe(32);
+  it("is data-driven with the full question set", () => {
+    expect(questionnaireV4.length).toBe(26);
   });
 
   it("groups into section-per-screen modules preserving order", () => {
@@ -14,31 +14,24 @@ describe("questionnaire structure", () => {
     expect(SECTIONS[0].module).toBe("Your goals");
     // consecutive same-module questions are merged
     const home = SECTIONS.find((s) => s.module === "Your home");
-    expect(home?.questions.map((q) => q.id)).toEqual([
-      "home_type",
-      "ownership",
-      "year_built",
-      "zip_code",
-      "time_horizon",
-    ]);
+    expect(home?.questions.map((q) => q.id)).toEqual(["home_type", "home_age", "zip_code"]);
+    const plans = SECTIONS.find((s) => s.module === "Your plans");
+    expect(plans?.questions.map((q) => q.id)).toEqual(["own_or_rent", "home_plans"]);
   });
 
   it("marks the expected required questions", () => {
     expect(REQUIRED_IDS).toEqual(
       expect.arrayContaining([
         "primary_goals",
-        "household",
-        "home_type",
-        "ownership",
-        "year_built",
+        "household_composition",
         "zip_code",
         "budget",
-        "diy_level",
-        "bedroom_sleep",
-        "maintenance_confidence",
-        "first_room",
+        "moisture_signs",
+        "bedroom_restfulness",
+        "priority_area",
       ])
     );
+    expect(REQUIRED_IDS.length).toBe(7);
   });
 });
 
@@ -68,7 +61,7 @@ describe("selection limits (multi-select)", () => {
   });
 
   it("declares the other documented multi-select limits", () => {
-    // Only primary_goals has a hard limit in V4; the rest are unbounded by design.
+    // Only primary_goals has a hard limit; the rest are unbounded by design.
     const limited = questionnaireV4.filter((q) => q.maxSelections !== undefined);
     expect(limited.map((q) => q.id)).toEqual(["primary_goals"]);
   });
