@@ -27,6 +27,7 @@ type PersistedState = {
   answers: Answers;
   profileId: string;
   startedAt: string;
+  email?: string;
   snapshot?: SnapshotType;
 };
 
@@ -39,6 +40,7 @@ export default function Questionnaire() {
   const [phase, setPhase] = useState<Phase>("welcome");
   const [sectionIndex, setSectionIndex] = useState(0);
   const [answers, setAnswers] = useState<Answers>({});
+  const [email, setEmail] = useState("");
   const [invalidIds, setInvalidIds] = useState<string[]>([]);
   const [profileId, setProfileId] = useState("");
   const [startedAt, setStartedAt] = useState("");
@@ -74,6 +76,7 @@ export default function Questionnaire() {
           setAnswers(saved.answers ?? {});
           setProfileId(saved.profileId || newId());
           setStartedAt(saved.startedAt || new Date().toISOString());
+          setEmail(saved.email ?? "");
           hydrated.current = true;
           return;
         }
@@ -108,13 +111,14 @@ export default function Questionnaire() {
         answers,
         profileId,
         startedAt,
+        email: email || undefined,
         snapshot: snapshot ?? undefined,
       };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
     } catch {
       /* storage unavailable */
     }
-  }, [phase, sectionIndex, answers, profileId, startedAt, snapshot]);
+  }, [phase, sectionIndex, answers, profileId, startedAt, email, snapshot]);
 
   // Best-effort abandonment tracking.
   useEffect(() => {
@@ -222,12 +226,13 @@ export default function Questionnaire() {
       generatedBy: result.generatedBy,
       actionCount: result.topActions.length,
     });
-    // Best-effort visibility notification — never awaited, never blocks the
-    // visitor's results, and any failure here is silently ignored.
-    fetch("/api/notify-completion", {
+    // Best-effort — never awaited, never blocks the visitor's results, and
+    // any failure here is silently ignored. Stores the response (for /admin)
+    // and sends an immediate email notification.
+    fetch("/api/submit-response", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answers }),
+      body: JSON.stringify({ email, answers }),
     }).catch(() => {});
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   };
@@ -240,6 +245,7 @@ export default function Questionnaire() {
     return (
       <Snapshot
         snapshot={snapshot}
+        initialEmail={email}
         onExpandAction={(actionId) => track("recommendation_expanded", { actionId })}
         onRate={(rating, intended) =>
           track("snapshot_rated", { rating, intended: intended ?? "none" })
@@ -253,6 +259,8 @@ export default function Questionnaire() {
     return (
       <ReviewScreen
         answers={answers}
+        email={email}
+        onEmailChange={setEmail}
         onEditSection={goToSection}
         onSubmit={submit}
         onBack={() => goToSection(SECTIONS.length - 1)}

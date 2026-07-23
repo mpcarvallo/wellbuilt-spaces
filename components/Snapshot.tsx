@@ -9,6 +9,7 @@ import Disclaimer from "./Disclaimer";
 
 type SnapshotProps = {
   snapshot: SnapshotType;
+  initialEmail?: string;
   onExpandAction?: (actionId: string) => void;
   onRate?: (rating: number, intendedActionId: string | null) => void;
   onUpgradeClick?: () => void;
@@ -31,12 +32,14 @@ async function postJson(url: string, body: unknown): Promise<{ ok: boolean; erro
 
 function WaitlistCard({
   snapshot,
+  initialEmail,
   onJoined,
 }: {
   snapshot: SnapshotType;
+  initialEmail?: string;
   onJoined?: () => void;
 }) {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail ?? "");
   const [sendSnapshot, setSendSnapshot] = useState(true);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
@@ -120,6 +123,7 @@ function WaitlistCard({
 
 export default function Snapshot({
   snapshot,
+  initialEmail,
   onExpandAction,
   onRate,
   onUpgradeClick,
@@ -190,7 +194,7 @@ export default function Snapshot({
         onSubmit={(rating, intended) => onRate?.(rating, intended)}
       />
 
-      <WaitlistCard snapshot={snapshot} onJoined={onUpgradeClick} />
+      <WaitlistCard snapshot={snapshot} initialEmail={initialEmail} onJoined={onUpgradeClick} />
 
       <Disclaimer text={snapshot.disclaimer} />
     </div>

@@ -175,7 +175,7 @@ function sectionHtml(section: (typeof SECTIONS)[number], answers: Answers): stri
 }
 
 /** Full-fidelity per-respondent record — every answered question, grouped exactly like the app's own Review screen. Sent to the site owner only, never to the visitor. */
-export function completionNotifyHtml(answers: Answers): string {
+export function completionNotifyHtml(email: string, answers: Answers): string {
   const sections = SECTIONS.map((s) => sectionHtml(s, answers)).join("");
   return `
   <div style="background:${CREAM};padding:32px 16px;font-family:Arial,sans-serif;">
@@ -183,7 +183,8 @@ export function completionNotifyHtml(answers: Answers): string {
       <tr>
         <td style="padding:24px 28px;">
           <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:${MOSS};">WellBuilt Spaces</p>
-          <h1 style="margin:0 0 8px;font-size:18px;color:${FOREGROUND};">A questionnaire was just completed</h1>
+          <h1 style="margin:0 0 4px;font-size:18px;color:${FOREGROUND};">A questionnaire was just completed</h1>
+          <p style="margin:0 0 8px;font-size:14px;color:${FOREGROUND};">${escapeHtml(email)}</p>
           <table role="presentation" width="100%" style="border-collapse:collapse;border-top:1px solid ${BORDER};">${sections}</table>
         </td>
       </tr>
