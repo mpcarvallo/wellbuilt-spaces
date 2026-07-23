@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Snapshot as SnapshotType } from "@/types/home-profile";
+import { isValidEmail } from "@/lib/validate-email";
 import ActionCard from "./ActionCard";
 import ScoreIndicators from "./ScoreIndicators";
 import UsefulnessRating from "./UsefulnessRating";
@@ -9,11 +10,61 @@ import Disclaimer from "./Disclaimer";
 
 type SnapshotProps = {
   snapshot: SnapshotType;
-  initialEmail?: string;
+  /** Empty until the visitor clears the email gate below. */
+  email: string;
+  onRevealEmail: (email: string) => void;
   onExpandAction?: (actionId: string) => void;
   onRate?: (rating: number, intendedActionId: string | null) => void;
   onUpgradeClick?: () => void;
 };
+
+function EmailGate({ onReveal }: { onReveal: (email: string) => void }) {
+  const [value, setValue] = useState("");
+  const [touched, setTouched] = useState(false);
+  const valid = isValidEmail(value);
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-moss/40 bg-sage/15 p-6 sm:p-8 text-center">
+      <h1 className="font-serif text-2xl text-moss">Your Home Snapshot is ready</h1>
+      <p className="text-sm text-muted max-w-md mx-auto">
+        Enter your email to see your top three priorities.
+      </p>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!valid) {
+            setTouched(true);
+            return;
+          }
+          onReveal(value.trim());
+        }}
+        className="mx-auto flex w-full max-w-sm flex-col gap-2"
+      >
+        <input
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          required
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={() => setTouched(true)}
+          placeholder="you@example.com"
+          aria-label="Email address"
+          className="w-full rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground placeholder:text-muted/70 focus:border-moss transition-colors duration-150"
+        />
+        {touched && !valid && (
+          <p className="text-sm text-clay">Enter a valid email address.</p>
+        )}
+        <button
+          type="submit"
+          className="rounded-full bg-moss px-8 py-3 text-base font-medium text-white transition-colors duration-150 hover:bg-moss-dark"
+        >
+          See my Snapshot
+        </button>
+      </form>
+    </div>
+  );
+}
 
 async function postJson(url: string, body: unknown): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -36,10 +87,10 @@ function WaitlistCard({
   onJoined,
 }: {
   snapshot: SnapshotType;
-  initialEmail?: string;
+  initialEmail: string;
   onJoined?: () => void;
 }) {
-  const [email, setEmail] = useState(initialEmail ?? "");
+  const [email, setEmail] = useState(initialEmail);
   const [sendSnapshot, setSendSnapshot] = useState(true);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
@@ -123,12 +174,17 @@ function WaitlistCard({
 
 export default function Snapshot({
   snapshot,
-  initialEmail,
+  email,
+  onRevealEmail,
   onExpandAction,
   onRate,
   onUpgradeClick,
 }: SnapshotProps) {
   const [first, ...rest] = snapshot.topActions;
+
+  if (!email) {
+    return <EmailGate onReveal={onRevealEmail} />;
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -194,7 +250,7 @@ export default function Snapshot({
         onSubmit={(rating, intended) => onRate?.(rating, intended)}
       />
 
-      <WaitlistCard snapshot={snapshot} initialEmail={initialEmail} onJoined={onUpgradeClick} />
+      <WaitlistCard snapshot={snapshot} initialEmail={email} onJoined={onUpgradeClick} />
 
       <Disclaimer text={snapshot.disclaimer} />
     </div>
